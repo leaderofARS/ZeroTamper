@@ -1,0 +1,20 @@
+{
+  "name": "witnesschain",
+  "version": "1.0.0",
+  "description": "Decentralized Bystander Evidence Network on Solana",
+  "private": true,
+  "workspaces": [
+    "apps/backend",
+    "apps/dashboard"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=apps/backend",
+    "dev:dashboard": "npm run dev --workspace=apps/dashboard",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:dashboard\"",
+    "build": "npm run build --workspace=apps/dashboard",
+    "test": "anchor test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
