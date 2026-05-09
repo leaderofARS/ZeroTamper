@@ -137,8 +137,17 @@ export default function LegalPortalClient() {
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ email: user.email })
                 });
-                if (res.ok) alert("Legal API secret has been sent to your email!");
-                else alert("Failed to send secret. Please contact support.");
+                const data = await res.json();
+                if (res.ok) {
+                  if (data.previewUrl) {
+                    window.open(data.previewUrl, "_blank");
+                    alert("A mock email has been 'sent'! The preview has been opened in a new tab. Check it for your secret.");
+                  } else {
+                    alert("Legal API secret has been sent to your email!");
+                  }
+                } else {
+                  alert("Failed to send secret: " + (data.error || "Unknown error"));
+                }
               } catch (e) {
                 alert("Connection error.");
               }
