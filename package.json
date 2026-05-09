@@ -16,7 +16,10 @@
     "test": "anchor test"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "next": "^14.2.35",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   },
   "dependencies": {
     "@openai/codex": "^0.129.0",
