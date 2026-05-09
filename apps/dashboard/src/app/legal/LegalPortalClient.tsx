@@ -12,6 +12,7 @@ type EvidenceItem = {
   solanaSignature?: string;
   witnessWallet: string;
   submittedAt: string;
+  onChain?: any;
 };
 
 type Bundle = {
@@ -294,55 +295,81 @@ export default function LegalPortalClient() {
             ))}
           </div>
 
-          {/* Evidence tab */}
+          {/* Evidence tab (Premium Verification Package) */}
           {activeTab === "evidence" && (
-            <div className="card">
-              <table className="evidence-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>SHA-256 Hash</th>
-                    <th>IPFS CID</th>
-                    <th>Solana Tx</th>
-                    <th>Submitted</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bundle.evidenceBundle.map((e, i) => (
-                    <tr key={i}>
-                      <td style={{ color: "var(--text-muted)" }}>{i + 1}</td>
-                      <td><span className="hash-chip">{e.sha256Hash.slice(0, 12)}…</span></td>
-                      <td>
-                        <a
-                          href={e.ipfsGatewayUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ color: "var(--accent-cyan)", fontFamily: "monospace", fontSize: "0.8rem" }}
-                        >
-                          {e.ipfsCid.slice(0, 10)}…
-                        </a>
-                      </td>
-                      <td>
-                        {e.solanaSignature ? (
-                          <a
-                            href={`https://explorer.solana.com/tx/${e.solanaSignature}?cluster=devnet`}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ color: "var(--accent-purple)", fontFamily: "monospace", fontSize: "0.8rem" }}
-                          >
-                            {e.solanaSignature.slice(0, 10)}…
-                          </a>
-                        ) : (
-                          <span style={{ color: "var(--text-muted)" }}>pending</span>
-                        )}
-                      </td>
-                      <td style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                        {new Date(e.submittedAt).toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              {bundle.evidenceBundle.map((e, i) => (
+                <div key={i} className="card" style={{ overflow: "hidden" }}>
+                  <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.02)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <span style={{ fontWeight: 800, color: "var(--text-muted)" }}>#{i + 1}</span>
+                      <span className="hash-chip" style={{ fontSize: "0.75rem" }}>{e.sha256Hash}</span>
+                    </div>
+                    {e.onChain && <div className="badge badge-success" style={{ fontSize: "0.7rem" }}>Premium Verification Package</div>}
+                  </div>
+                  <div className="card-body" style={{ padding: "24px" }}>
+                    <div className="grid-2" style={{ gap: "20px", marginBottom: "20px" }}>
+                       <div>
+                         <div className="stat-label">IPFS CID</div>
+                         <a href={e.ipfsGatewayUrl} target="_blank" style={{ color: "var(--accent-cyan)", fontFamily: "monospace", fontSize: "0.8rem" }}>
+                           {e.ipfsCid}
+                         </a>
+                       </div>
+                       <div>
+                         <div className="stat-label">Solana Signature</div>
+                         <a href={`https://explorer.solana.com/tx/${e.solanaSignature}?cluster=devnet`} target="_blank" style={{ color: "var(--accent-purple)", fontFamily: "monospace", fontSize: "0.8rem" }}>
+                           {e.solanaSignature || "Pending..."}
+                         </a>
+                       </div>
+                    </div>
+
+                    {e.onChain ? (
+                      <div style={{ 
+                        background: "rgba(0,0,0,0.2)", 
+                        borderRadius: "8px", 
+                        padding: "20px",
+                        border: "1px solid var(--border-subtle)"
+                      }}>
+                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "20px" }}>
+                            <div className="forensic-box">
+                              <div className="forensic-label">Slot</div>
+                              <div className="forensic-value">{e.onChain.slot.toLocaleString()}</div>
+                            </div>
+                            <div className="forensic-box">
+                              <div className="forensic-label">Status</div>
+                              <div className="forensic-value" style={{ color: "var(--accent-green)" }}>{e.onChain.confirmationStatus.toUpperCase()}</div>
+                            </div>
+                            <div className="forensic-box">
+                              <div className="forensic-label">Fee</div>
+                              <div className="forensic-value">◎ {(e.onChain.fee / 1e9).toFixed(6)}</div>
+                            </div>
+                         </div>
+
+                         <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "8px" }}>On-chain Instruction Data</div>
+                         <div style={{ 
+                           background: "#050505", 
+                           color: "#0f0",
+                           padding: "16px", 
+                           borderRadius: "4px", 
+                           fontFamily: "monospace", 
+                           fontSize: "0.75rem",
+                           border: "1px solid #111"
+                         }}>
+                            <div>{`{`}</div>
+                            <div style={{ paddingLeft: "16px" }}>"program": "EvidenceRegistry",</div>
+                            <div style={{ paddingLeft: "16px" }}>"method": "SubmitEvidence",</div>
+                            <div style={{ paddingLeft: "16px" }}>"witness": "{e.witnessWallet}",</div>
+                            <div style={{ paddingLeft: "16px" }}>"ipfs_cid": "{e.ipfsCid}",</div>
+                            <div style={{ paddingLeft: "16px" }}>"sha256": "{e.sha256Hash.slice(0, 8)}..."</div>
+                            <div>{`}`}</div>
+                         </div>
+                      </div>
+                    ) : (
+                      <div className="badge badge-pending">On-chain forensic data not yet available for this record.</div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

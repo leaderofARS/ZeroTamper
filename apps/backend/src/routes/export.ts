@@ -73,6 +73,30 @@ router.get("/:incidentId", exportLimiter, legalAuth, async (req: Request, res: R
     const incident = await getIncident(incidentId);
     const records = (incident as any).evidence_records ?? [];
 
+    // Fetch detailed Solana data for each record to create the "Premium Verification Package"
+    const evidenceWithOnChain = await Promise.all(
+      records.map(async (r: any) => {
+        let onChain = null;
+        if (r.solana_signature) {
+          try {
+            const { getTransactionDetails } = await import("../services/solana");
+            onChain = await getTransactionDetails(r.solana_signature);
+          } catch (e) {
+            console.warn(`[export] Could not fetch tx ${r.solana_signature}:`, (e as any).message);
+          }
+        }
+        return {
+          sha256Hash: r.sha256_hash,
+          ipfsCid: r.ipfs_cid,
+          ipfsGatewayUrl: `https://gateway.pinata.cloud/ipfs/${r.ipfs_cid}`,
+          solanaSignature: r.solana_signature,
+          witnessWallet: r.witness_wallet,
+          submittedAt: r.created_at,
+          onChain: onChain
+        };
+      })
+    );
+
     const bundle = {
       incidentId: incident.id,
       exportedAt: new Date().toISOString(),
@@ -80,14 +104,7 @@ router.get("/:incidentId", exportLimiter, legalAuth, async (req: Request, res: R
       witnessCount: incident.witness_count,
       firstSeenAt: incident.first_seen_at,
       location: { lat: incident.centroid_lat, lon: incident.centroid_lon },
-      evidenceBundle: records.map((r: any) => ({
-        sha256Hash: r.sha256_hash,
-        ipfsCid: r.ipfs_cid,
-        ipfsGatewayUrl: `https://gateway.pinata.cloud/ipfs/${r.ipfs_cid}`,
-        solanaSignature: r.solana_signature,
-        witnessWallet: r.witness_wallet,
-        submittedAt: r.created_at,
-      })),
+      evidenceBundle: evidenceWithOnChain,
       chainOfCustody: records.map((r: any, i: number) => ({
         step: i + 1,
         actor: r.witness_wallet,
