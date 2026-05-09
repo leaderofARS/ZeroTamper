@@ -11,11 +11,17 @@ services:
       - key: PORT
         value: 10000
       - key: SUPABASE_URL
+        fromParam: SUPABASE_URL
       - key: SUPABASE_SERVICE_KEY
+        fromParam: SUPABASE_SERVICE_KEY
       - key: SOLANA_RPC_URL
+        fromParam: SOLANA_RPC_URL
       - key: PROGRAM_ID
+        fromParam: PROGRAM_ID
       - key: SOLANA_PRIVATE_KEY
+        fromParam: SOLANA_PRIVATE_KEY
       - key: PINATA_JWT
+        fromParam: PINATA_JWT
       - key: ML_SERVICE_URL
         sync: false # Set this to your ML service URL after deploying it
 
@@ -26,3 +32,20 @@ services:
     plan: starter # ML models need more RAM
     envVars:
       - key: GEMINI_API_KEY
+        fromParam: GEMINI_API_KEY
+
+parameters:
+  - key: SUPABASE_URL
+    description: Supabase Project URL
+  - key: SUPABASE_SERVICE_KEY
+    description: Supabase Service Role Secret
+  - key: SOLANA_RPC_URL
+    description: Solana RPC URL (e.g. devnet)
+  - key: PROGRAM_ID
+    description: Solana Smart Contract ID
+  - key: SOLANA_PRIVATE_KEY
+    description: Backend Service Wallet Private Key (JSON array)
+  - key: PINATA_JWT
+    description: Pinata API JWT Token
+  - key: GEMINI_API_KEY
+    description: Google Gemini API Key
