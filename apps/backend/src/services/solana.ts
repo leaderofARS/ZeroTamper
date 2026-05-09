@@ -26,18 +26,22 @@ export async function anchorEvidenceOnChain(
     const hashBytes = Buffer.from(sha256Hash, "hex");
     if (hashBytes.length !== 32) throw new Error("Invalid SHA256 hash length");
 
-    // Convert lat/lon to micro-degrees for i64 storage
-    const latInt = BigInt(Math.floor(latitude * 1000000));
-    const lonInt = BigInt(Math.floor(longitude * 1000000));
+    // Convert lat/lon to micro-degrees for i64 storage (contract expects 10^7)
+    const latInt = BigInt(Math.floor(latitude * 10000000));
+    const lonInt = BigInt(Math.floor(longitude * 10000000));
 
     const witnessPubkey = new PublicKey(witnessWallet);
+    
+    // UUID v4 is 36 chars with hyphens, but Solana PDA seeds are max 32 bytes.
+    // By stripping hyphens, we get exactly 32 chars (32 bytes).
+    const normalizedIncidentId = incidentId.replace(/-/g, "");
 
     // PDA for the evidence - MUST match Anchor seeds: [b"evidence", witness.key().as_ref(), incident_id.as_bytes()]
     const [evidencePda] = PublicKey.findProgramAddressSync(
       [
         Buffer.from("evidence"),
         witnessPubkey.toBuffer(),
-        Buffer.from(incidentId),
+        Buffer.from(normalizedIncidentId),
       ],
       PROGRAM_ID
     );
@@ -54,7 +58,7 @@ export async function anchorEvidenceOnChain(
       .submitEvidence(
         Array.from(hashBytes),
         ipfsCid,
-        incidentId,
+        normalizedIncidentId,
         new anchor.BN(latInt.toString()),
         new anchor.BN(lonInt.toString())
       )
