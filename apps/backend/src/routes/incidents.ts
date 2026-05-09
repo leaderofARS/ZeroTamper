@@ -78,44 +78,45 @@ router.post("/:incidentId/ai-summary", async (req: Request, res: Response) => {
   console.log(`[AI-Summary] Request for incident: ${incidentId}`);
 
   try {
-    // 1. Get incident and its evidence
+    // 1. Get incident and its evidence (Corrected for schema.sql)
     const { data: evidence, error } = await supabase
-      .from("evidence")
-      .select("media_url, mime_type")
+      .from("evidence_records")
+      .select("ipfs_cid, media_type")
       .eq("incident_id", incidentId)
       .limit(1);
 
     if (error) {
       console.error("[AI-Summary] Supabase Error:", error.message);
-      return res.status(500).json({ error: "Database query failed" });
+      return res.status(500).json({ error: `Database query failed: ${error.message}` });
     }
 
     if (!evidence || evidence.length === 0) {
       console.warn(`[AI-Summary] No evidence found for incident: ${incidentId}`);
-      return res.status(404).json({ error: "No media records found for this incident. Cannot analyze." });
+      return res.status(404).json({ error: "No media records found for this incident." });
     }
 
     const targetEvidence = evidence[0];
-    console.log(`[AI-Summary] Analyzing media: ${targetEvidence.media_url}`);
+    const mediaUrl = `https://gateway.pinata.cloud/ipfs/${targetEvidence.ipfs_cid}`;
+    console.log(`[AI-Summary] Analyzing media: ${mediaUrl}`);
 
     // 2. Call ML Service
     const axios = require("axios");
     try {
       const mlResponse = await axios.post(`${ML_URL}/describe`, {
-        mediaUrl: targetEvidence.media_url,
-        mimeType: targetEvidence.mime_type
-      }, { timeout: 20000 });
+        mediaUrl: mediaUrl,
+        mimeType: targetEvidence.media_type
+      }, { timeout: 25000 });
 
       res.json({ 
         summary: mlResponse.data.description,
-        source: targetEvidence.media_url
+        source: mediaUrl
       });
     } catch (mlErr: any) {
       console.error("[AI-Summary] ML Service Error:", mlErr.message);
       // Fallback for demo if ML service is down but we have evidence
       res.json({
         summary: "AI analysis was unable to reach the forensic engine. However, the evidence is securely hashed and anchored on Solana.",
-        source: targetEvidence.media_url
+        source: mediaUrl
       });
     }
   } catch (err: any) {
