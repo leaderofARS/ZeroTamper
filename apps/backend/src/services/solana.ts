@@ -79,3 +79,39 @@ export async function anchorEvidenceOnChain(
     return null;
   }
 }
+
+/**
+ * Fetches detailed transaction data from Solana for verification.
+ */
+export async function getTransactionDetails(signature: string) {
+  try {
+    const tx = await connection.getParsedTransaction(signature, {
+      maxSupportedTransactionVersion: 0,
+      commitment: "finalized",
+    });
+
+    if (!tx) return null;
+
+    return {
+      signature,
+      slot: tx.slot,
+      timestamp: tx.blockTime ? new Date(tx.blockTime * 1000).toISOString() : null,
+      fee: tx.meta?.fee,
+      computeUnits: tx.meta?.computeUnitsConsumed,
+      accounts: tx.transaction.message.accountKeys.map((k, i) => ({
+        address: k.pubkey.toBase58(),
+        signer: k.signer,
+        writable: k.writable,
+      })),
+      instructions: (tx.transaction.message.instructions as any[]).map(ix => ({
+        programId: ix.programId?.toBase58(),
+        data: ix.data,
+        parsed: ix.parsed,
+      })),
+      confirmationStatus: tx.meta?.err ? "Failed" : "Success",
+    };
+  } catch (err) {
+    console.error("[solana] Error fetching tx details:", err);
+    return null;
+  }
+}

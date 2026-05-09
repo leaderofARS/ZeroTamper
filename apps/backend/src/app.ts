@@ -12,6 +12,7 @@ import scoreRouter from "./routes/score";
 import leaderboardRouter from "./routes/leaderboard";
 import healthRouter from "./routes/health";
 import statsRouter from "./routes/stats";
+import verifyRouter from "./routes/verify";
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use("/api/export", exportRouter);
 app.use("/api/score", scoreRouter);
 app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/stats", statsRouter);
+app.use("/api/verify", verifyRouter);
 
 // ── 404 handler ────────────────────────────────────────────────────
 app.use((_req, res) => {

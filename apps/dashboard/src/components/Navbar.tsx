@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { href: "/report",      label: "🎥 Live Report" },
   { href: "/leaderboard", label: "🏆 Leaderboard" },
   { href: "/legal",       label: "⚖️ Legal Portal" },
+  { href: "/verify",      label: "🛡️ Verify"       },
 ];
 
 export default function Navbar() {
