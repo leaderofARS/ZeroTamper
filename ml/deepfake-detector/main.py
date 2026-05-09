@@ -29,21 +29,41 @@ if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
 # --- Kaggle Model Load ---
-print("Downloading Kaggle Deepfake model...")
-model_path = kagglehub.model_download("aestroe/deepfake-detection/tensorFlow2/default")
-print("Path to model files:", model_path)
-
-# The Kaggle model contains multiple files. We will load the Xception image model.
-keras_model_path = os.path.join(model_path, "image", "XceptionModel.keras")
-print(f"Loading TF2 model from: {keras_model_path}")
-
+print("Downloading/Locating Kaggle Deepfake model...")
 try:
-    # Attempting to load as standard keras model
-    kaggle_model = tf.keras.models.load_model(keras_model_path)
-    print("Kaggle keras model loaded successfully.")
+    model_dir = kagglehub.model_download("aestroe/deepfake-detection/tensorFlow2/default")
+    print("Model directory:", model_dir)
 except Exception as e:
-    print(f"Error loading keras model: {e}")
-    kaggle_model = None
+    print(f"Kagglehub download failed: {e}")
+    model_dir = None
+
+def load_xception_model(base_path):
+    if not base_path: return None
+    
+    # Try different filenames found in the Kaggle archive
+    # 1. Standard .keras format
+    # 2. Legacy .h5 format (often more compatible with current TF loaders)
+    # 3. Subdirectory variations
+    paths_to_try = [
+        os.path.join(base_path, "image", "deepfake_detection_xception2.h5"),
+        os.path.join(base_path, "image", "XceptionModel.keras"),
+        os.path.join(base_path, "XceptionModel.keras"),
+        os.path.join(base_path, "deepfake_detection_xception2.h5"),
+    ]
+    
+    for path in paths_to_try:
+        if os.path.exists(path):
+            print(f"Attempting to load model from: {path}")
+            try:
+                # Use compile=False to avoid issues with custom metrics/optimizers in the saved file
+                model = tf.keras.models.load_model(path, compile=False)
+                print(f"✓ Model loaded successfully from {path}")
+                return model
+            except Exception as e:
+                print(f"✗ Failed to load {path}: {e}")
+    return None
+
+kaggle_model = load_xception_model(model_dir)
 
 class AnalyzeRequest(BaseModel):
     data: str # base64 string
@@ -63,6 +83,8 @@ def preprocess_image_for_tf(img: Image.Image, target_size=(256, 256)):
 
 def evaluate_image_tf(img: Image.Image) -> float:
     """Returns deepfake probability for an image [0.0 - 1.0]"""
+    if not kaggle_model:
+        return 0.0
     try:
         tensor = preprocess_image_for_tf(img)
         prediction = kaggle_model(tensor)
@@ -72,24 +94,24 @@ def evaluate_image_tf(img: Image.Image) -> float:
             key = list(prediction.keys())[0]
             val = prediction[key].numpy()[0]
         else:
-            val = prediction.numpy()[0]
+            val = prediction.numpy()[0] if hasattr(prediction, "numpy") else prediction[0]
             
         # If model outputs 2 classes (real/fake), extract fake probability
-        if len(val) > 1:
+        if hasattr(val, "__len__") and len(val) > 1:
             return float(val[1])
-        return float(val[0])
+        return float(val) if isinstance(val, (float, int, np.float32)) else float(val[0])
     except Exception as e:
         print(f"TF evaluation failed: {e}")
         return 0.0
 
 def evaluate_video_tf(video_path: str) -> float:
     """Extract frames and evaluate them using TF model."""
+    if not kaggle_model: return 0.0
     cap = cv2.VideoCapture(video_path)
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    if frame_count == 0:
+    if frame_count <= 0:
         return 0.0
         
-    # Sample up to 5 frames spread evenly across the video
     sample_indices = np.linspace(0, frame_count - 1, min(5, frame_count), dtype=int)
     confidences = []
     
@@ -97,21 +119,16 @@ def evaluate_video_tf(video_path: str) -> float:
         cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
         ret, frame = cap.read()
         if ret:
-            # OpenCV uses BGR, convert to RGB
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(frame_rgb)
             confidences.append(evaluate_image_tf(img))
             
     cap.release()
-    if not confidences:
-        return 0.0
-    # If any frame is highly fake, we flag the whole video
-    return float(np.max(confidences)) 
+    return float(np.max(confidences)) if confidences else 0.0
 
 def upload_to_gemini(path, mime_type):
-    """Uploads the given file to Gemini File API (required for Audio/Video)."""
-    file = genai.upload_file(path, mime_type=mime_type)
-    return file
+    """Uploads the given file to Gemini File API."""
+    return genai.upload_file(path, mime_type=mime_type)
 
 @app.post("/analyze", response_model=AnalyzeResponse)
 async def analyze_media(req: AnalyzeRequest):
@@ -123,19 +140,20 @@ async def analyze_media(req: AnalyzeRequest):
     is_deepfake = False
     confidence = 0.0
     p_hash = "0000000000000000"
-    mode = "kaggle-tf2"
+    mode = "kaggle-tf2" if kaggle_model else "gemini-only"
 
     is_image = req.mimeType.startswith("image/")
     is_video = req.mimeType.startswith("video/")
     is_audio = req.mimeType.startswith("audio/")
     tmp_path = None
 
-    # 1. pHash for duplicates (Images/Videos only)
+    # 1. pHash for duplicates
     if is_image:
-        img = Image.open(io.BytesIO(media_bytes)).convert("RGB")
-        p_hash = str(imagehash.phash(img))
+        try:
+            img = Image.open(io.BytesIO(media_bytes)).convert("RGB")
+            p_hash = str(imagehash.phash(img))
+        except: pass
     elif is_video:
-        # Write to temp file to extract first frame for pHash
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
             tmp.write(media_bytes)
             tmp_path = tmp.name
@@ -146,80 +164,63 @@ async def analyze_media(req: AnalyzeRequest):
             p_hash = str(imagehash.phash(Image.fromarray(frame_rgb)))
         cap.release()
 
-    # 2. Kaggle TF2 Model Inference
+    # 2. Local Model Inference
     tf_conf = 0.0
-    if is_image:
-        tf_conf = evaluate_image_tf(img)
-    elif is_video:
-        tf_conf = evaluate_video_tf(tmp_path)
-    # Standard TF image models don't handle audio, so tf_conf remains 0.0
+    if kaggle_model:
+        if is_image:
+            tf_conf = evaluate_image_tf(img)
+        elif is_video:
+            tf_conf = evaluate_video_tf(tmp_path)
     
-    # 3. Gemini Multimodal Inference (Strong for Video/Audio analysis)
+    # 3. Gemini Multimodal Inference (Strong fallback)
     gemini_conf = 0.0
     if GEMINI_API_KEY:
         try:
-            model = genai.GenerativeModel('gemini-1.5-pro')
+            model = genai.GenerativeModel('gemini-1.5-flash') # Use flash for speed
             prompt = (
-                "You are an expert digital forensics analyst. Carefully inspect this media file. "
-                "Is there any evidence that this is a deepfake, AI-generated, or digitally manipulated? "
-                "For video: Look for AI artifacts, weird lighting, inconsistent textures, or anatomical anomalies. "
-                "For audio: Listen for robotic pacing, metallic artifacts, or unnatural breathing. "
-                "Respond ONLY with a JSON object in this exact format: {\"is_deepfake\": true/false, \"confidence\": 0.0-1.0}"
+                "Identify if this media is a deepfake or AI-generated. "
+                "Look for artifacts, anatomical errors, or unnatural textures. "
+                "Respond ONLY with JSON: {\"is_deepfake\": bool, \"confidence\": 0.0-1.0}"
             )
             
             if is_image:
                 response = model.generate_content([prompt, img])
             else:
-                # Video or Audio requires File API
                 ext = ".mp4" if is_video else ".mp3"
-                if not is_video: # Write audio to temp
+                if not is_video:
                     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
                         tmp.write(media_bytes)
                         tmp_path = tmp.name
                 
                 gemini_file = upload_to_gemini(tmp_path, req.mimeType)
-                
-                # Gemini File API processing check for larger videos
                 import time
-                while gemini_file.state.name == 'PROCESSING':
+                for _ in range(10): # Wait up to 20s
+                    if gemini_file.state.name != 'PROCESSING': break
                     time.sleep(2)
                     gemini_file = genai.get_file(gemini_file.name)
                     
                 response = model.generate_content([prompt, gemini_file])
-                genai.delete_file(gemini_file.name) # cleanup remote file
+                genai.delete_file(gemini_file.name)
             
-            text = response.text.strip()
-            match = re.search(r'\{.*\}', text, re.DOTALL)
+            match = re.search(r'\{.*\}', response.text.strip(), re.DOTALL)
             if match:
                 res_json = json.loads(match.group(0))
                 gemini_conf = float(res_json.get("confidence", 0.0))
         except Exception as e:
-            print(f"[Deepfake Error] Gemini API failed: {e}")
+            print(f"Gemini failed: {e}")
 
-    # Combine signals: take the maximum confidence of both models
     confidence = max(tf_conf, gemini_conf)
-    if confidence > 0.8:
-        is_deepfake = True
-
-    if gemini_conf > tf_conf:
-        mode = "gemini-api"
+    if confidence > 0.8: is_deepfake = True
+    if gemini_conf > tf_conf: mode = "gemini-api"
         
-    # Cleanup local temp file
-    if tmp_path and os.path.exists(tmp_path):
-        os.remove(tmp_path)
+    if tmp_path and os.path.exists(tmp_path): os.remove(tmp_path)
 
-    return AnalyzeResponse(
-        isDeepfake=is_deepfake,
-        confidence=confidence,
-        pHash=p_hash,
-        modelMode=mode
-    )
+    return AnalyzeResponse(isDeepfake=is_deepfake, confidence=confidence, pHash=p_hash, modelMode=mode)
 
 @app.get("/health")
 def health():
     return {
         "status": "ok", 
-        "service": "Multimodal Deepfake Detector", 
         "gemini_enabled": bool(GEMINI_API_KEY),
         "tf_model_loaded": kaggle_model is not None
     }

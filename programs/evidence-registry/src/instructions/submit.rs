@@ -7,7 +7,7 @@ use crate::errors::EvidenceError;
 pub struct SubmitEvidence<'info> {
     #[account(
         init,
-        payer = witness,
+        payer = authority,
         space = EvidenceRecord::LEN,
         seeds = [b"evidence", witness.key().as_ref(), incident_id.as_bytes()],
         bump
@@ -16,15 +16,19 @@ pub struct SubmitEvidence<'info> {
 
     #[account(
         init_if_needed,
-        payer = witness,
+        payer = authority,
         space = WitnessProfile::LEN,
         seeds = [b"profile", witness.key().as_ref()],
         bump
     )]
     pub witness_profile: Account<'info, WitnessProfile>,
 
+    /// The wallet of the user who captured the evidence.
+    /// CHECK: Only used as a seed for the PDA.
+    pub witness: AccountInfo<'info>,
+
     #[account(mut)]
-    pub witness: Signer<'info>,
+    pub authority: Signer<'info>,
 
     pub system_program: Program<'info, System>,
 }

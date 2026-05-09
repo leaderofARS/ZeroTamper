@@ -1,0 +1,997 @@
+export const IDL = 
+{
+  "address": "AnUPkBodvjwk4XZorYm8MtgJ9jy9E9VzJwG8GJfTvYnS",
+  "metadata": {
+    "name": "evidence_registry",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "WitnessChain Evidence Registry — tamper-proof civic evidence anchoring on Solana"
+  },
+  "instructions": [
+    {
+      "name": "corroborate_evidence",
+      "docs": [
+        "Corroborate an existing incident — increments corroboration_count.",
+        "If count reaches CORROBORATION_THRESHOLD, status is set to Confirmed."
+      ],
+      "discriminator": [
+        11,
+        125,
+        116,
+        10,
+        19,
+        228,
+        222,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "evidence_record",
+          "docs": [
+            "The original evidence record to corroborate (owned by any prior witness)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  105,
+                  100,
+                  101,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "original_witness"
+              },
+              {
+                "kind": "arg",
+                "path": "incident_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "original_witness"
+        },
+        {
+          "name": "corroborator",
+          "docs": [
+            "The wallet doing the corroboration — must differ from the original witness."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "incident_id",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "export_evidence",
+      "docs": [
+        "Read-only export — emits a FlaggedExport event with full provenance."
+      ],
+      "discriminator": [
+        232,
+        108,
+        143,
+        161,
+        89,
+        202,
+        175,
+        0
+      ],
+      "accounts": [
+        {
+          "name": "evidence_record",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  105,
+                  100,
+                  101,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "evidence_owner"
+              },
+              {
+                "kind": "arg",
+                "path": "incident_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "evidence_owner"
+        },
+        {
+          "name": "exporter",
+          "docs": [
+            "Authorized exporter (legal API service or law enforcement wallet)."
+          ],
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "incident_id",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "flag_evidence",
+      "docs": [
+        "Flag evidence as potentially manipulated (ML service or authority)."
+      ],
+      "discriminator": [
+        127,
+        3,
+        103,
+        177,
+        91,
+        224,
+        128,
+        175
+      ],
+      "accounts": [
+        {
+          "name": "evidence_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  105,
+                  100,
+                  101,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "evidence_owner"
+              },
+              {
+                "kind": "arg",
+                "path": "incident_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "evidence_owner"
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "The authority flagging the evidence (ML service wallet or law enforcement)."
+          ],
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "incident_id",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "mint_badge",
+      "docs": [
+        "Mint a soul-bound NFT badge for a witness."
+      ],
+      "discriminator": [
+        242,
+        234,
+        237,
+        183,
+        232,
+        245,
+        146,
+        1
+      ],
+      "accounts": [
+        {
+          "name": "witness_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "recipient"
+              }
+            ]
+          }
+        },
+        {
+          "name": "badge_mint",
+          "docs": [
+            "The badge mint — one per badge_type per wallet."
+          ],
+          "writable": true
+        },
+        {
+          "name": "recipient_ata",
+          "docs": [
+            "ATA that receives exactly 1 token."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "badge_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "recipient"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "badge_type",
+          "type": "u8"
+        },
+        {
+          "name": "metadata_uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "submit_evidence",
+      "docs": [
+        "Submit a new piece of evidence for an incident.",
+        "Creates a PDA keyed by [b\"evidence\", wallet, incident_id]."
+      ],
+      "discriminator": [
+        12,
+        169,
+        228,
+        194,
+        229,
+        31,
+        44,
+        39
+      ],
+      "accounts": [
+        {
+          "name": "evidence_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  105,
+                  100,
+                  101,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "witness"
+              },
+              {
+                "kind": "arg",
+                "path": "incident_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "witness_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "witness"
+              }
+            ]
+          }
+        },
+        {
+          "name": "witness",
+          "docs": [
+            "The wallet of the user who captured the evidence."
+          ]
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "sha256_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "ipfs_cid",
+          "type": "string"
+        },
+        {
+          "name": "incident_id",
+          "type": "string"
+        },
+        {
+          "name": "latitude",
+          "type": "i64"
+        },
+        {
+          "name": "longitude",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "update_witness_score",
+      "docs": [
+        "Update the witness score on-chain (called by the backend service)."
+      ],
+      "discriminator": [
+        46,
+        95,
+        186,
+        149,
+        188,
+        15,
+        105,
+        130
+      ],
+      "accounts": [
+        {
+          "name": "witness_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "wallet"
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "Authority allowed to update scores (the backend service wallet)."
+          ],
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "delta",
+          "type": "i64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "EvidenceRecord",
+      "discriminator": [
+        221,
+        242,
+        76,
+        137,
+        184,
+        94,
+        80,
+        225
+      ]
+    },
+    {
+      "name": "WitnessProfile",
+      "discriminator": [
+        89,
+        219,
+        184,
+        171,
+        157,
+        48,
+        180,
+        24
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "BadgeMinted",
+      "discriminator": [
+        53,
+        227,
+        68,
+        72,
+        115,
+        78,
+        25,
+        14
+      ]
+    },
+    {
+      "name": "EvidenceCorroborated",
+      "discriminator": [
+        105,
+        104,
+        3,
+        23,
+        205,
+        223,
+        180,
+        248
+      ]
+    },
+    {
+      "name": "EvidenceExported",
+      "discriminator": [
+        209,
+        44,
+        31,
+        106,
+        198,
+        89,
+        89,
+        122
+      ]
+    },
+    {
+      "name": "EvidenceFlagged",
+      "discriminator": [
+        196,
+        16,
+        127,
+        115,
+        33,
+        49,
+        38,
+        8
+      ]
+    },
+    {
+      "name": "EvidenceSubmitted",
+      "discriminator": [
+        13,
+        123,
+        197,
+        44,
+        231,
+        117,
+        168,
+        53
+      ]
+    },
+    {
+      "name": "WitnessScoreUpdated",
+      "discriminator": [
+        18,
+        92,
+        91,
+        204,
+        85,
+        27,
+        117,
+        105
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "CidTooLong",
+      "msg": "IPFS CID exceeds maximum length"
+    },
+    {
+      "code": 6001,
+      "name": "IncidentIdTooLong",
+      "msg": "Incident ID exceeds maximum length"
+    },
+    {
+      "code": 6002,
+      "name": "ReasonTooLong",
+      "msg": "Flag reason exceeds maximum length"
+    },
+    {
+      "code": 6003,
+      "name": "UriTooLong",
+      "msg": "Metadata URI exceeds maximum length"
+    },
+    {
+      "code": 6004,
+      "name": "AlreadyFlagged",
+      "msg": "Evidence has already been flagged"
+    },
+    {
+      "code": 6005,
+      "name": "AlreadyConfirmed",
+      "msg": "Evidence is already confirmed"
+    },
+    {
+      "code": 6006,
+      "name": "DuplicateSubmission",
+      "msg": "Witness has already submitted evidence for this incident"
+    },
+    {
+      "code": 6007,
+      "name": "Unauthorized",
+      "msg": "Unauthorized: only the authority can perform this action"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidBadgeType",
+      "msg": "Invalid badge type"
+    },
+    {
+      "code": 6009,
+      "name": "BadgeAlreadyMinted",
+      "msg": "Badge already minted for this witness"
+    }
+  ],
+  "types": [
+    {
+      "name": "BadgeMinted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "badge_type",
+            "type": "u8"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EvidenceCorroborated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "incident_id",
+            "type": "string"
+          },
+          {
+            "name": "corroboration_count",
+            "type": "u8"
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EvidenceExported",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "incident_id",
+            "type": "string"
+          },
+          {
+            "name": "exported_by",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EvidenceFlagged",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "incident_id",
+            "type": "string"
+          },
+          {
+            "name": "reason",
+            "type": "string"
+          },
+          {
+            "name": "flagged_by",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EvidenceRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "witness",
+            "docs": [
+              "Submitting wallet public key."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "sha256_hash",
+            "docs": [
+              "SHA-256 hash of the media file, computed on-device before upload."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "ipfs_cid",
+            "docs": [
+              "IPFS content identifier where the media is pinned."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "incident_id",
+            "docs": [
+              "UUID v4 that identifies the incident cluster this evidence belongs to."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "latitude",
+            "docs": [
+              "GPS latitude × 10^7 (stored as integer to avoid floats)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "longitude",
+            "docs": [
+              "GPS longitude × 10^7."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "timestamp",
+            "docs": [
+              "Block-level Unix timestamp set at submission time."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "corroboration_count",
+            "docs": [
+              "Number of independent witnesses who corroborated this incident."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "status",
+            "docs": [
+              "Current evidence status."
+            ],
+            "type": {
+              "defined": {
+                "name": "EvidenceStatus"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EvidenceStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Confirmed"
+          },
+          {
+            "name": "Flagged"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EvidenceSubmitted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "witness",
+            "type": "pubkey"
+          },
+          {
+            "name": "incident_id",
+            "type": "string"
+          },
+          {
+            "name": "ipfs_cid",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WitnessProfile",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "docs": [
+              "Wallet this profile belongs to."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "score",
+            "docs": [
+              "Cumulative witness score (can be updated by authority)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "submission_count",
+            "docs": [
+              "Total submissions ever made."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "confirmed_count",
+            "docs": [
+              "Total confirmed incidents contributed to."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "badge_bitfield",
+            "docs": [
+              "Bitfield of earned badge types (bit i = badge type i earned)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WitnessScoreUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_score",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -39,4 +39,12 @@ target/
 
 # OS metadata
 .DS_Store
-Thumbs.db
+# Logs
+data.log
+errors.log
+*.log
+
+# Scratch
+scratch/
+.agents/
+.codex/

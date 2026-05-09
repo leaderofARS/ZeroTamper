@@ -22,7 +22,8 @@ export async function analyzeMedia(buffer: Buffer, mimeType: string): Promise<De
     );
     return data;
   } catch (err) {
-    console.warn("[deepfake-service] ML service unavailable, skipping analysis:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn("[deepfake-service] ML service unavailable, skipping analysis:", message);
     // Gracefully degrade — do not block submission if ML is down
     return {
       isDeepfake: false,

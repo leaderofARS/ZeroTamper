@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { Alert, StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Camera, CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import * as FileSystem from 'expo-file-system';
@@ -8,9 +8,13 @@ import * as Crypto from 'expo-crypto';
 type Evidence = {
   uri: string;
   hash: string;
+  mediaBase64: string;
   location: Location.LocationObject | null;
   timestamp: string;
 };
+
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const DEMO_WALLET = process.env.EXPO_PUBLIC_DEMO_WALLET || 'DemoWitness111111111111111111111111111111111';
 
 export default function App() {
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -19,6 +23,7 @@ export default function App() {
 
   const [isRecording, setIsRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [evidence, setEvidence] = useState<Evidence | null>(null);
   
   const cameraRef = useRef<CameraView>(null);
@@ -81,6 +86,7 @@ export default function App() {
       setEvidence({
         uri,
         hash,
+        mediaBase64: fileData,
         location: loc,
         timestamp: new Date().toISOString()
       });
@@ -92,9 +98,47 @@ export default function App() {
   };
 
   const submitToBlockchain = async () => {
-    // This is where you would connect to the WitnessChain backend / IPFS
-    alert('Evidence bundle securely anchored to Solana and uploaded to IPFS!');
-    setEvidence(null); // Reset
+    if (!evidence?.location) return;
+
+    setSubmitting(true);
+    try {
+      const deviceIdHash = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        `${DEMO_WALLET}:${evidence.timestamp}`
+      );
+
+      const response = await fetch(`${BACKEND_URL}/api/evidence/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer demo-${evidence.hash}`,
+        },
+        body: JSON.stringify({
+          sha256Hash: evidence.hash,
+          latitude: evidence.location.coords.latitude,
+          longitude: evidence.location.coords.longitude,
+          mediaType: 'video/mp4',
+          deviceIdHash,
+          witnessWallet: DEMO_WALLET,
+          mediaBase64: evidence.mediaBase64,
+        }),
+      });
+
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.error || `Submission failed (${response.status})`);
+      }
+
+      Alert.alert(
+        'Evidence submitted',
+        `Incident ${body.incidentId}\nCID: ${body.ipfsCid}`
+      );
+      setEvidence(null);
+    } catch (error) {
+      Alert.alert('Submission failed', error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (evidence) {
@@ -118,8 +162,14 @@ export default function App() {
             <Text style={styles.value}>{evidence.timestamp}</Text>
           </View>
 
-          <TouchableOpacity style={[styles.btn, { backgroundColor: '#14f195' }]} onPress={submitToBlockchain}>
-            <Text style={[styles.btnText, { color: '#000' }]}>Anchor to Blockchain & Upload</Text>
+          <TouchableOpacity
+            style={[styles.btn, { backgroundColor: '#14f195', opacity: submitting ? 0.7 : 1 }]}
+            onPress={submitToBlockchain}
+            disabled={submitting}
+          >
+            <Text style={[styles.btnText, { color: '#000' }]}>
+              {submitting ? 'Submitting Evidence...' : 'Submit Evidence Bundle'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.btn, { backgroundColor: '#333', marginTop: 10 }]} onPress={() => setEvidence(null)}>
             <Text style={styles.btnText}>Discard</Text>

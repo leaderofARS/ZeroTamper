@@ -6,7 +6,7 @@ pub mod errors;
 
 use instructions::*;
 
-declare_id!("REPLACE_WITH_DEPLOYED_PROGRAM_ID");
+declare_id!("AnUPkBodvjwk4XZorYm8MtgJ9jy9E9VzJwG8GJfTvYnS");
 
 #[program]
 pub mod evidence_registry {

@@ -271,6 +271,8 @@ npm install
 
 ```bash
 # apps/mobile/.env
+EXPO_PUBLIC_BACKEND_URL=http://localhost:4000
+EXPO_PUBLIC_DEMO_WALLET=DemoWitness111111111111111111111111111111111
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 EXPO_PUBLIC_PINATA_JWT=your_pinata_jwt
@@ -278,8 +280,10 @@ EXPO_PUBLIC_SOLANA_RPC=https://api.devnet.solana.com
 EXPO_PUBLIC_PROGRAM_ID=your_deployed_program_id
 
 # apps/dashboard/.env
+NEXT_PUBLIC_BACKEND_URL=http://localhost:4000
 NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 SUPABASE_SERVICE_KEY=your_service_key
 LEGAL_API_SECRET=your_legal_api_secret
 ```

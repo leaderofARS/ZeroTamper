@@ -1,6 +1,20 @@
 "use client";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import useSWR from "swr";
+
+const MapComponent = dynamic(() => import("./MapComponent"), {
+  ssr: false,
+  loading: () => (
+    <div style={{
+      width: "100%", height: "100%", 
+      display: "flex", alignItems: "center", justifyContent: "center",
+      background: "var(--bg-surface)", color: "var(--text-muted)"
+    }}>
+      Loading Map Engine...
+    </div>
+  )
+});
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 
@@ -26,6 +40,7 @@ type Filters = {
 
 export default function HeatmapSection() {
   const [filters, setFilters] = useState<Filters>({ status: "", since: "" });
+  const [selected, setSelected] = useState<Incident | null>(null);
 
   const params = new URLSearchParams({
     ...(filters.status ? { status: filters.status } : {}),
@@ -85,61 +100,12 @@ export default function HeatmapSection() {
         </span>
       </div>
 
-      {/* Map placeholder — replace with react-map-gl MapboxMap once token is configured */}
       <div className="map-wrapper" style={{ background: "var(--bg-surface)", position: "relative" }}>
-        <div style={{
-          position: "absolute", inset: 0,
-          background: `
-            radial-gradient(circle at 30% 45%, rgba(153,69,255,0.25) 0%, transparent 35%),
-            radial-gradient(circle at 65% 30%, rgba(20,241,149,0.2) 0%, transparent 28%),
-            radial-gradient(circle at 50% 70%, rgba(245,166,35,0.15) 0%, transparent 20%),
-            radial-gradient(circle at 20% 75%, rgba(153,69,255,0.12) 0%, transparent 18%)
-          `,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "var(--text-secondary)",
-          fontSize: "0.9rem",
-        }}>
-          {isLoading ? (
-            <div>Loading incidents…</div>
-          ) : (
-            <>
-              <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🗺️</div>
-              <div style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "8px" }}>
-                Bengaluru, Karnataka
-              </div>
-              <div>{incidents.length} incidents in view</div>
-              <div style={{ marginTop: "8px", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                Set NEXT_PUBLIC_MAPBOX_TOKEN to enable interactive heatmap
-              </div>
-
-              {/* Render dots for incidents */}
-              {incidents.slice(0, 30).map((inc, i) => (
-                <div
-                  key={inc.id}
-                  title={`${inc.status} — ${inc.witness_count} witnesses`}
-                  style={{
-                    position: "absolute",
-                    left: `${20 + ((inc.centroid_lon - 77.4) / 0.5) * 60}%`,
-                    top:  `${80 - ((inc.centroid_lat - 12.8) / 0.4) * 60}%`,
-                    width: inc.status === "Confirmed" ? "12px" : "8px",
-                    height: inc.status === "Confirmed" ? "12px" : "8px",
-                    borderRadius: "50%",
-                    background: inc.status === "Confirmed" ? "var(--accent-cyan)"
-                              : inc.status === "Flagged"   ? "var(--accent-red)"
-                              :                              "var(--accent-amber)",
-                    boxShadow: `0 0 12px currentColor`,
-                    cursor: "pointer",
-                    animation: "pulse 2s infinite",
-                    animationDelay: `${(i * 0.1) % 2}s`,
-                  }}
-                />
-              ))}
-            </>
-          )}
-        </div>
+        <MapComponent 
+          incidents={incidents} 
+          selected={selected} 
+          onSelect={setSelected} 
+        />
       </div>
 
       {/* Incident list */}

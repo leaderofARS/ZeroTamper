@@ -1,4 +1,6 @@
 import { supabase } from "../lib/supabase";
+import { randomUUID } from "crypto";
+import { getMemoryIncident, resolveMemoryIncident } from "../lib/memoryStore";
 
 /** GPS radius (metres) for grouping submissions into the same incident. */
 const CLUSTER_RADIUS_METRES = 200;
@@ -43,7 +45,10 @@ export async function resolveIncidentCluster(
     .lte("first_seen_at", windowEnd)
     .neq("status", "Flagged");
 
-  if (error) throw new Error(`Supabase query error: ${error.message}`);
+  if (error) {
+    console.warn("[supabase] Falling back to in-memory incident clustering:", error.message);
+    return resolveMemoryIncident(latitude, longitude, timestamp);
+  }
 
   // Find the nearest cluster within the radius
   let bestId: string | null = null;
@@ -72,7 +77,13 @@ export async function resolveIncidentCluster(
 
       await supabase
         .from("incidents")
-        .update({ centroid_lat: newLat, centroid_lon: newLon, witness_count: n })
+        .update({
+          centroid_lat: newLat,
+          centroid_lon: newLon,
+          witness_count: n,
+          status: n >= 3 ? "Confirmed" : "Pending",
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", bestId);
     }
 
@@ -80,7 +91,7 @@ export async function resolveIncidentCluster(
   }
 
   // Create a new incident cluster
-  const newId = crypto.randomUUID();
+  const newId = randomUUID();
   const { error: insertError } = await supabase.from("incidents").insert({
     id: newId,
     centroid_lat: latitude,
@@ -88,9 +99,13 @@ export async function resolveIncidentCluster(
     first_seen_at: new Date(timestamp * 1000).toISOString(),
     witness_count: 1,
     status: "Pending",
+    updated_at: new Date(timestamp * 1000).toISOString(),
   });
 
-  if (insertError) throw new Error(`Failed to create incident: ${insertError.message}`);
+  if (insertError) {
+    console.warn("[supabase] Falling back to in-memory incident creation:", insertError.message);
+    return resolveMemoryIncident(latitude, longitude, timestamp);
+  }
   return newId;
 }
 
@@ -116,6 +131,10 @@ export async function getIncident(incidentId: string) {
     .eq("id", incidentId)
     .single();
 
-  if (error || !incident) throw new Error("Incident not found");
+  if (error || !incident) {
+    const memoryIncident = getMemoryIncident(incidentId);
+    if (memoryIncident) return memoryIncident;
+    throw new Error("Incident not found");
+  }
   return incident;
 }

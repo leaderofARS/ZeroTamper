@@ -29,19 +29,26 @@ export async function uploadToIPFS(
     );
   }
 
-  const { data } = await axios.post<PinataResponse>(
-    `${PINATA_API}/pinning/pinFileToIPFS`,
-    form,
-    {
-      headers: {
-        ...form.getHeaders(),
-        Authorization: `Bearer ${PINATA_JWT}`,
-      },
-      maxBodyLength: Infinity,
+  try {
+    const { data } = await axios.post<PinataResponse>(
+      `${PINATA_API}/pinning/pinFileToIPFS`,
+      form,
+      {
+        headers: {
+          ...form.getHeaders(),
+          Authorization: `Bearer ${PINATA_JWT.trim()}`,
+        },
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+      }
+    );
+    return data.IpfsHash;
+  } catch (error: any) {
+    if (error.response) {
+      console.error("[ipfs] Pinata error response:", error.response.status, error.response.data);
     }
-  );
-
-  return data.IpfsHash;
+    throw error;
+  }
 }
 
 /**

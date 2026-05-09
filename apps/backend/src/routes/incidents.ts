@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { supabase } from "../lib/supabase";
 import { getIncident } from "../services/clustering";
+import { listMemoryIncidents } from "../lib/memoryStore";
 
 const router = Router();
 
@@ -57,7 +58,9 @@ router.get("/", async (req: Request, res: Response) => {
   const { data, error, count } = await query;
 
   if (error) {
-    res.status(500).json({ error: error.message });
+    console.warn("[supabase] Returning in-memory incidents:", error.message);
+    const incidents = listMemoryIncidents();
+    res.json({ total: incidents.length, incidents });
     return;
   }
 

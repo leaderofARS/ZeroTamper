@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: witnesschain-backend
+    env: node
+    rootDir: apps/backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - fromContext: parameter
+        key: SUPABASE_URL
+      - fromContext: parameter
+        key: SUPABASE_SERVICE_KEY
+      - fromContext: parameter
+        key: SOLANA_RPC_URL
+      - fromContext: parameter
+        key: PROGRAM_ID
+      - fromContext: parameter
+        key: SOLANA_PRIVATE_KEY
+      - fromContext: parameter
+        key: PINATA_JWT
+      - key: ML_SERVICE_URL
+        sync: false # Set this to your ML service URL after deploying it
+
+  - type: web
+    name: witnesschain-ml
+    env: docker
+    rootDir: ml/deepfake-detector
+    plan: starter # ML models need more RAM
+    envVars:
+      - fromContext: parameter
+        key: GEMINI_API_KEY

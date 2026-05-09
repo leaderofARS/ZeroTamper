@@ -9,3 +9,4 @@ kagglehub
 tensorflow
 opencv-python-headless
 tf_keras
+gunicorn

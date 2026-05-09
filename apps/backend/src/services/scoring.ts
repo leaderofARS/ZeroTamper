@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { listMemoryLeaderboard } from "../lib/memoryStore";
 
 /** Witness score formula constants */
 const BASE_WEIGHT = 10;
@@ -80,7 +81,10 @@ export async function getLeaderboard(city?: string, limit = 20) {
   }
 
   const { data, error } = await query;
-  if (error) throw new Error(`Leaderboard error: ${error.message}`);
+  if (error) {
+    console.warn("[supabase] Returning in-memory leaderboard:", error.message);
+    return listMemoryLeaderboard(city, limit);
+  }
   return data ?? [];
 }
 

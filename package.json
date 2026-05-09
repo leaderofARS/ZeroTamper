@@ -10,11 +10,16 @@
   "scripts": {
     "dev:backend": "npm run dev --workspace=apps/backend",
     "dev:dashboard": "npm run dev --workspace=apps/dashboard",
+    "dev:mobile": "npm run start --prefix apps/mobile",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:dashboard\"",
     "build": "npm run build --workspace=apps/dashboard",
     "test": "anchor test"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "@openai/codex": "^0.129.0",
+    "skills": "^1.5.5"
   }
 }

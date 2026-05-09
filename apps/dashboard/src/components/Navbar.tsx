@@ -1,9 +1,16 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import dynamic from "next/dynamic";
+
+const WalletMultiButton = dynamic(
+  async () => (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
+  { ssr: false }
+);
 
 const NAV_LINKS = [
   { href: "/",            label: "🗺️ Heatmap"    },
+  { href: "/report",      label: "🎥 Live Report" },
   { href: "/leaderboard", label: "🏆 Leaderboard" },
   { href: "/legal",       label: "⚖️ Legal Portal" },
 ];
@@ -29,7 +36,12 @@ export default function Navbar() {
           ))}
         </ul>
 
-        <span className="navbar-badge">Devnet</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <span className="navbar-badge" style={{ margin: 0 }}>Devnet</span>
+          <div className="wallet-btn-wrapper">
+             <WalletMultiButton />
+          </div>
+        </div>
       </div>
     </nav>
   );

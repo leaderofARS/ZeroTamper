@@ -15,16 +15,19 @@ import healthRouter from "./routes/health";
 const app = express();
 
 // ── Security & middleware ──────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN?.split(",") || "*",
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    origin: process.env.CORS_ORIGIN === "*" ? "*" : process.env.CORS_ORIGIN?.split(","),
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
 app.use(compression());
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "50mb" }));
 app.use(morgan("combined"));
 
 // ── Global rate limiting ───────────────────────────────────────────
