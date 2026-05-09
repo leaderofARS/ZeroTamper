@@ -17,7 +17,10 @@ import kagglehub
 
 # Force TensorFlow to use Legacy Keras (Keras 2) to successfully load older Kaggle models
 os.environ["TF_USE_LEGACY_KERAS"] = "1"
-import tensorflow as tf  # type: ignore # noqa: E402
+try:
+    import tensorflow as tf  # type: ignore # noqa: E402
+except ImportError:
+    tf = None
 
 load_dotenv()
 
@@ -26,7 +29,10 @@ app = FastAPI(title="WitnessChain ML Service - Multimodal Edition")
 # --- Gemini Configuration ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+    except Exception as e:
+        print(f"GenAI configuration failed: {e}")
 
 # --- Kaggle Model Load ---
 print("Downloading/Locating Kaggle Deepfake model...")
@@ -38,12 +44,8 @@ except Exception as e:
     model_dir = None
 
 def load_xception_model(base_path):
-    if not base_path: return None
+    if not base_path or tf is None: return None
     
-    # Try different filenames found in the Kaggle archive
-    # 1. Standard .keras format
-    # 2. Legacy .h5 format (often more compatible with current TF loaders)
-    # 3. Subdirectory variations
     paths_to_try = [
         os.path.join(base_path, "image", "deepfake_detection_xception2.h5"),
         os.path.join(base_path, "image", "XceptionModel.keras"),
@@ -83,7 +85,7 @@ def preprocess_image_for_tf(img: Image.Image, target_size=(256, 256)):
 
 def evaluate_image_tf(img: Image.Image) -> float:
     """Returns deepfake probability for an image [0.0 - 1.0]"""
-    if not kaggle_model:
+    if not kaggle_model or tf is None:
         return 0.0
     try:
         tensor = preprocess_image_for_tf(img)
@@ -106,7 +108,7 @@ def evaluate_image_tf(img: Image.Image) -> float:
 
 def evaluate_video_tf(video_path: str) -> float:
     """Extract frames and evaluate them using TF model."""
-    if not kaggle_model: return 0.0
+    if not kaggle_model or tf is None: return 0.0
     cap = cv2.VideoCapture(video_path)
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     if frame_count <= 0:
@@ -148,6 +150,7 @@ async def analyze_media(req: AnalyzeRequest):
     tmp_path = None
 
     # 1. pHash for duplicates
+    img = None
     if is_image:
         try:
             img = Image.open(io.BytesIO(media_bytes)).convert("RGB")
@@ -167,7 +170,7 @@ async def analyze_media(req: AnalyzeRequest):
     # 2. Local Model Inference
     tf_conf = 0.0
     if kaggle_model:
-        if is_image:
+        if is_image and img:
             tf_conf = evaluate_image_tf(img)
         elif is_video:
             tf_conf = evaluate_video_tf(tmp_path)
@@ -176,14 +179,15 @@ async def analyze_media(req: AnalyzeRequest):
     gemini_conf = 0.0
     if GEMINI_API_KEY:
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash') # Use flash for speed
+            # Explicitly try 'gemini-1.5-flash-latest' which is often more stable
+            model = genai.GenerativeModel('gemini-1.5-flash-latest') 
             prompt = (
                 "Identify if this media is a deepfake or AI-generated. "
                 "Look for artifacts, anatomical errors, or unnatural textures. "
                 "Respond ONLY with JSON: {\"is_deepfake\": bool, \"confidence\": 0.0-1.0}"
             )
             
-            if is_image:
+            if is_image and img:
                 response = model.generate_content([prompt, img])
             else:
                 ext = ".mp4" if is_video else ".mp3"
