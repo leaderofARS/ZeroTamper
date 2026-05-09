@@ -221,14 +221,20 @@ function IncidentDetail({ id }: { id: string }) {
 
   const generateSummary = async () => {
     setIsGenerating(true);
+    setAiSummary(null); // Clear previous
     try {
       const res = await fetch(`${BACKEND}/api/incidents/${id}/ai-summary`, {
         method: "POST"
       });
       const json = await res.json();
-      if (json.summary) setAiSummary(json.summary);
+      if (json.summary) {
+        setAiSummary(json.summary);
+      } else if (json.error) {
+        setAiSummary(`⚠️ ${json.error}`);
+      }
     } catch (err) {
       console.error(err);
+      setAiSummary("⚠️ Connection to analysis engine failed.");
     } finally {
       setIsGenerating(false);
     }

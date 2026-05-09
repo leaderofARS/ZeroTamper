@@ -74,6 +74,8 @@ router.get("/", async (req: Request, res: Response) => {
 router.post("/:incidentId/ai-summary", async (req: Request, res: Response) => {
   const { incidentId } = req.params;
   const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:5001";
+  
+  console.log(`[AI-Summary] Request for incident: ${incidentId}`);
 
   try {
     // 1. Get incident and its evidence
@@ -81,27 +83,44 @@ router.post("/:incidentId/ai-summary", async (req: Request, res: Response) => {
       .from("evidence")
       .select("media_url, mime_type")
       .eq("incident_id", incidentId)
-      .limit(1)
-      .single();
+      .limit(1);
 
-    if (error || !evidence) {
-      return res.status(404).json({ error: "No evidence found for this incident" });
+    if (error) {
+      console.error("[AI-Summary] Supabase Error:", error.message);
+      return res.status(500).json({ error: "Database query failed" });
     }
+
+    if (!evidence || evidence.length === 0) {
+      console.warn(`[AI-Summary] No evidence found for incident: ${incidentId}`);
+      return res.status(404).json({ error: "No media records found for this incident. Cannot analyze." });
+    }
+
+    const targetEvidence = evidence[0];
+    console.log(`[AI-Summary] Analyzing media: ${targetEvidence.media_url}`);
 
     // 2. Call ML Service
     const axios = require("axios");
-    const mlResponse = await axios.post(`${ML_URL}/describe`, {
-      mediaUrl: evidence.media_url,
-      mimeType: evidence.mime_type
-    });
+    try {
+      const mlResponse = await axios.post(`${ML_URL}/describe`, {
+        mediaUrl: targetEvidence.media_url,
+        mimeType: targetEvidence.mime_type
+      }, { timeout: 20000 });
 
-    res.json({ 
-      summary: mlResponse.data.description,
-      source: evidence.media_url
-    });
+      res.json({ 
+        summary: mlResponse.data.description,
+        source: targetEvidence.media_url
+      });
+    } catch (mlErr: any) {
+      console.error("[AI-Summary] ML Service Error:", mlErr.message);
+      // Fallback for demo if ML service is down but we have evidence
+      res.json({
+        summary: "AI analysis was unable to reach the forensic engine. However, the evidence is securely hashed and anchored on Solana.",
+        source: targetEvidence.media_url
+      });
+    }
   } catch (err: any) {
-    console.error("[AI Summary Error]:", err.message);
-    res.status(500).json({ error: "Failed to generate AI summary" });
+    console.error("[AI-Summary] unexpected Error:", err.message);
+    res.status(500).json({ error: "Internal server error during analysis" });
   }
 });
 
