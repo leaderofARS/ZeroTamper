@@ -9,6 +9,8 @@ const WalletMultiButton = dynamic(
   { ssr: false }
 );
 
+import { useState } from "react";
+
 const NAV_LINKS = [
   { href: "/",            label: "🗺️ Heatmap"    },
   { href: "/report",      label: "🎥 Live Report" },
@@ -19,33 +21,57 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="navbar">
-      <div className="navbar-inner">
-        <Link href="/" className="navbar-logo">
-          <span className="navbar-logo-icon">🔗</span>
-          WitnessChain
-        </Link>
+    <>
+      <nav className="navbar">
+        <div className="navbar-inner">
+          <Link href="/" className="navbar-logo">
+            <span className="navbar-logo-icon">🔗</span>
+            <span className="navbar-logo-text">WitnessChain</span>
+          </Link>
 
-        <ul className="navbar-links">
-          {NAV_LINKS.map(({ href, label }) => (
-            <li key={href}>
-              <Link href={href} className={pathname === href ? "active" : ""}>
-                {label}
-              </Link>
-            </li>
-          ))}
-        </ul>
+          <ul className="navbar-links">
+            {NAV_LINKS.map(({ href, label }) => (
+              <li key={href}>
+                <Link href={href} className={pathname === href ? "active" : ""}>
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <span className="navbar-badge" style={{ margin: 0 }}>Devnet</span>
-          <AuthButton />
-          <div className="wallet-btn-wrapper">
-             <WalletMultiButton />
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <span className="navbar-badge" style={{ margin: 0 }}>Devnet</span>
+            <AuthButton />
+            <div className="wallet-btn-wrapper" style={{ display: "contents" }}>
+               <WalletMultiButton />
+            </div>
+            
+            <button 
+              className="mobile-toggle" 
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label="Toggle menu"
+            >
+              {isOpen ? "✕" : "☰"}
+            </button>
           </div>
         </div>
+      </nav>
+
+      <div className={`mobile-menu ${isOpen ? "open" : ""}`}>
+        {NAV_LINKS.map(({ href, label }) => (
+          <Link 
+            key={href} 
+            href={href} 
+            className="mobile-menu-link"
+            onClick={() => setIsOpen(false)}
+          >
+            {label}
+          </Link>
+        ))}
       </div>
-    </nav>
+    </>
   );
 }

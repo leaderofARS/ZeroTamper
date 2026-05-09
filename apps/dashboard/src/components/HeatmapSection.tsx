@@ -185,17 +185,17 @@ function IncidentRow({ inc, isSelected, onSelect }: { inc: Incident, isSelected:
         onClick={onSelect}
         style={{ cursor: "pointer" }}
       >
-        <td><span className="hash-chip">{inc.id.slice(0, 8)}…</span></td>
-        <td>
+        <td data-label="Incident ID"><span className="hash-chip">{inc.id.slice(0, 8)}…</span></td>
+        <td data-label="Status">
           <span className={`badge badge-${inc.status.toLowerCase()}`}>
             {inc.status === "Confirmed" ? "✅" : inc.status === "Flagged" ? "🚩" : "⏳"} {inc.status}
           </span>
         </td>
-        <td style={{ color: "var(--accent-cyan)", fontWeight: 600 }}>{inc.witness_count}</td>
-        <td style={{ fontFamily: "monospace", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+        <td data-label="Witnesses" style={{ color: "var(--accent-cyan)", fontWeight: 600 }}>{inc.witness_count}</td>
+        <td data-label="Location" style={{ fontFamily: "monospace", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
           {inc.centroid_lat.toFixed(4)}, {inc.centroid_lon.toFixed(4)}
         </td>
-        <td style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+        <td data-label="First Seen" style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
           {new Date(inc.first_seen_at).toLocaleString()}
         </td>
       </tr>
