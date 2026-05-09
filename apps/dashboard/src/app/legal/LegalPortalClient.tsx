@@ -55,6 +55,39 @@ export default function LegalPortalClient() {
     checkAuth();
   }, [supabase.auth]);
 
+  const [verifying, setVerifying] = useState<Record<string, "loading" | "success" | "fail" | null>>({});
+  const [verifyResults, setVerifyResults] = useState<Record<string, string>>({});
+
+  const verifyEvidence = async (recordId: string, ipfsCid: string, expectedHash: string) => {
+    setVerifying(prev => ({ ...prev, [recordId]: "loading" }));
+    try {
+      // 1. Fetch from IPFS
+      const gatewayUrl = `https://gateway.pinata.cloud/ipfs/${ipfsCid}`;
+      const response = await fetch(gatewayUrl);
+      if (!response.ok) throw new Error("Could not reach IPFS gateway");
+      
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+
+      // 2. Compute SHA-256
+      const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const computedHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+      // 3. Compare
+      if (computedHash === expectedHash) {
+        setVerifying(prev => ({ ...prev, [recordId]: "success" }));
+        setVerifyResults(prev => ({ ...prev, [recordId]: `HASH MATCH: ${computedHash}` }));
+      } else {
+        setVerifying(prev => ({ ...prev, [recordId]: "fail" }));
+        setVerifyResults(prev => ({ ...prev, [recordId]: `HASH MISMATCH! Computed: ${computedHash}` }));
+      }
+    } catch (err: any) {
+      setVerifying(prev => ({ ...prev, [recordId]: "fail" }));
+      setVerifyResults(prev => ({ ...prev, [recordId]: `Error: ${err.message}` }));
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="card" style={{ padding: "40px", textAlign: "center" }}>
@@ -330,20 +363,46 @@ export default function LegalPortalClient() {
                         padding: "20px",
                         border: "1px solid var(--border-subtle)"
                       }}>
-                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-                            <div className="forensic-box">
-                              <div className="forensic-label">Slot</div>
-                              <div className="forensic-value">{e.onChain.slot.toLocaleString()}</div>
+                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", flex: 1 }}>
+                               <div className="forensic-box">
+                                 <div className="forensic-label">Slot</div>
+                                 <div className="forensic-value">{e.onChain.slot.toLocaleString()}</div>
+                               </div>
+                               <div className="forensic-box">
+                                 <div className="forensic-label">Status</div>
+                                 <div className="forensic-value" style={{ color: "var(--accent-green)" }}>{e.onChain.confirmationStatus.toUpperCase()}</div>
+                               </div>
+                               <div className="forensic-box">
+                                 <div className="forensic-label">Fee</div>
+                                 <div className="forensic-value">◎ {(e.onChain.fee / 1e9).toFixed(6)}</div>
+                               </div>
                             </div>
-                            <div className="forensic-box">
-                              <div className="forensic-label">Status</div>
-                              <div className="forensic-value" style={{ color: "var(--accent-green)" }}>{e.onChain.confirmationStatus.toUpperCase()}</div>
-                            </div>
-                            <div className="forensic-box">
-                              <div className="forensic-label">Fee</div>
-                              <div className="forensic-value">◎ {(e.onChain.fee / 1e9).toFixed(6)}</div>
-                            </div>
+                            <button 
+                              className={`btn ${verifying[e.sha256Hash] === "success" ? "btn-success" : "btn-secondary"}`}
+                              onClick={() => verifyEvidence(e.sha256Hash, e.ipfsCid, e.sha256Hash)}
+                              disabled={verifying[e.sha256Hash] === "loading"}
+                              style={{ marginLeft: "20px", whiteSpace: "nowrap" }}
+                            >
+                              {verifying[e.sha256Hash] === "loading" ? "⏳ Auditing..." : 
+                               verifying[e.sha256Hash] === "success" ? "🛡️ Integrity Verified" : 
+                               verifying[e.sha256Hash] === "fail" ? "⚠️ Audit Failed" : "🔍 Auto-Verify Proof"}
+                            </button>
                          </div>
+
+                         {verifyResults[e.sha256Hash] && (
+                           <div style={{ 
+                             marginBottom: "16px", 
+                             padding: "12px", 
+                             background: verifying[e.sha256Hash] === "success" ? "rgba(77,255,171,0.1)" : "rgba(255,77,109,0.1)",
+                             borderRadius: "4px",
+                             fontSize: "0.8rem",
+                             fontFamily: "monospace",
+                             border: verifying[e.sha256Hash] === "success" ? "1px solid var(--accent-green)" : "1px solid var(--accent-red)"
+                           }}>
+                             {verifyResults[e.sha256Hash]}
+                           </div>
+                         )}
 
                          <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "8px" }}>On-chain Instruction Data</div>
                          <div style={{ 
