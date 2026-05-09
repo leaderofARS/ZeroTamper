@@ -193,24 +193,29 @@ router.post("/submit", submitLimiter, walletAuth, async (req: Request, res: Resp
     }
 
     // 8. Anchor on Solana Devnet (Service-side subsidized anchoring)
-    anchorEvidenceOnChain(
-      data.sha256Hash,
-      ipfsCid,
-      incidentId,
-      data.latitude,
-      data.longitude,
-      data.witnessWallet
-    ).then(async (tx) => {
+    try {
+      console.log(`[solana] Attempting to anchor ${data.sha256Hash.slice(0, 8)}...`);
+      const tx = await anchorEvidenceOnChain(
+        data.sha256Hash,
+        ipfsCid,
+        incidentId,
+        data.latitude,
+        data.longitude,
+        data.witnessWallet
+      );
+      
       if (tx) {
         await supabase
           .from("evidence_records")
           .update({ solana_signature: tx })
           .eq("sha256_hash", data.sha256Hash);
-        console.log(`[solana] Signature updated for ${data.sha256Hash.slice(0, 8)}`);
+        console.log(`[solana] Signature updated: ${tx}`);
+      } else {
+        console.warn("[solana] Anchoring returned null (check service logs)");
       }
-    }).catch(err => {
-      console.warn("[solana] Background anchoring failed:", err.message);
-    });
+    } catch (err: any) {
+      console.error("[solana] Synchronous anchoring failed:", err.message);
+    }
 
     // 9. Recalculate witness score asynchronously
     recalculateScore(data.witnessWallet).catch(err => {
