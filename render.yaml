@@ -22,30 +22,20 @@ services:
         fromParam: SOLANA_PRIVATE_KEY
       - key: PINATA_JWT
         fromParam: PINATA_JWT
-      - key: ML_SERVICE_URL
-        sync: false # Set this to your ML service URL after deploying it
 
   - type: web
     name: witnesschain-ml
     env: docker
     rootDir: ml/deepfake-detector
-    plan: starter # ML models need more RAM
     envVars:
       - key: GEMINI_API_KEY
         fromParam: GEMINI_API_KEY
 
 parameters:
   - key: SUPABASE_URL
-    description: Supabase Project URL
   - key: SUPABASE_SERVICE_KEY
-    description: Supabase Service Role Secret
   - key: SOLANA_RPC_URL
-    description: Solana RPC URL (e.g. devnet)
   - key: PROGRAM_ID
-    description: Solana Smart Contract ID
   - key: SOLANA_PRIVATE_KEY
-    description: Backend Service Wallet Private Key (JSON array)
   - key: PINATA_JWT
-    description: Pinata API JWT Token
   - key: GEMINI_API_KEY
-    description: Google Gemini API Key
