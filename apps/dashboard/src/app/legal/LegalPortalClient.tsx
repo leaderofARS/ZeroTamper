@@ -55,13 +55,14 @@ export default function LegalPortalClient() {
     checkAuth();
   }, [supabase.auth]);
 
-  const [verifying, setVerifying] = useState<Record<string, "loading" | "success" | "fail" | null>>({});
+  const [verifying, setVerifying] = useState<Record<string, "idle" | "fetching" | "hashing" | "comparing" | "success" | "fail">>({});
   const [verifyResults, setVerifyResults] = useState<Record<string, string>>({});
 
   const verifyEvidence = async (recordId: string, ipfsCid: string, expectedHash: string) => {
-    setVerifying(prev => ({ ...prev, [recordId]: "loading" }));
+    setVerifying(prev => ({ ...prev, [recordId]: "fetching" }));
     try {
-      // 1. Fetch from IPFS
+      // Step 1: Fetch
+      await new Promise(r => setTimeout(r, 800)); // Visual delay
       const gatewayUrl = `https://gateway.pinata.cloud/ipfs/${ipfsCid}`;
       const response = await fetch(gatewayUrl);
       if (!response.ok) throw new Error("Could not reach IPFS gateway");
@@ -69,12 +70,17 @@ export default function LegalPortalClient() {
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
 
-      // 2. Compute SHA-256
+      // Step 2: Hash
+      setVerifying(prev => ({ ...prev, [recordId]: "hashing" }));
+      await new Promise(r => setTimeout(r, 1200)); // Visual delay for "work"
       const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const computedHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-      // 3. Compare
+      // Step 3: Compare
+      setVerifying(prev => ({ ...prev, [recordId]: "comparing" }));
+      await new Promise(r => setTimeout(r, 600));
+
       if (computedHash === expectedHash) {
         setVerifying(prev => ({ ...prev, [recordId]: "success" }));
         setVerifyResults(prev => ({ ...prev, [recordId]: `HASH MATCH: ${computedHash}` }));
@@ -363,7 +369,7 @@ export default function LegalPortalClient() {
                         padding: "20px",
                         border: "1px solid var(--border-subtle)"
                       }}>
-                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", flex: 1 }}>
                                <div className="forensic-box">
                                  <div className="forensic-label">Slot</div>
@@ -379,28 +385,72 @@ export default function LegalPortalClient() {
                                </div>
                             </div>
                             <button 
-                              className={`btn ${verifying[e.sha256Hash] === "success" ? "btn-success" : "btn-secondary"}`}
+                              className={`btn ${verifying[e.sha256Hash] === "success" ? "btn-success" : 
+                                               verifying[e.sha256Hash] === "fail" ? "btn-danger" : "btn-secondary"}`}
                               onClick={() => verifyEvidence(e.sha256Hash, e.ipfsCid, e.sha256Hash)}
-                              disabled={verifying[e.sha256Hash] === "loading"}
-                              style={{ marginLeft: "20px", whiteSpace: "nowrap" }}
+                              disabled={["fetching", "hashing", "comparing"].includes(verifying[e.sha256Hash] || "")}
+                              style={{ marginLeft: "20px", whiteSpace: "nowrap", minWidth: "180px" }}
                             >
-                              {verifying[e.sha256Hash] === "loading" ? "⏳ Auditing..." : 
+                              {["fetching", "hashing", "comparing"].includes(verifying[e.sha256Hash] || "") ? "⏳ Auditing..." : 
                                verifying[e.sha256Hash] === "success" ? "🛡️ Integrity Verified" : 
                                verifying[e.sha256Hash] === "fail" ? "⚠️ Audit Failed" : "🔍 Auto-Verify Proof"}
                             </button>
                          </div>
 
-                         {verifyResults[e.sha256Hash] && (
+                         {/* Visual Audit Timeline */}
+                         {verifying[e.sha256Hash] && verifying[e.sha256Hash] !== "idle" && (
                            <div style={{ 
-                             marginBottom: "16px", 
-                             padding: "12px", 
-                             background: verifying[e.sha256Hash] === "success" ? "rgba(77,255,171,0.1)" : "rgba(255,77,109,0.1)",
-                             borderRadius: "4px",
-                             fontSize: "0.8rem",
-                             fontFamily: "monospace",
-                             border: verifying[e.sha256Hash] === "success" ? "1px solid var(--accent-green)" : "1px solid var(--accent-red)"
+                             marginBottom: "24px", 
+                             padding: "20px", 
+                             background: "rgba(255,255,255,0.02)", 
+                             borderRadius: "8px",
+                             border: "1px dashed var(--border-subtle)"
                            }}>
-                             {verifyResults[e.sha256Hash]}
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
+                                {["fetching", "hashing", "comparing", "success"].map((step, idx) => {
+                                  const isCurrent = verifying[e.sha256Hash] === step;
+                                  const isDone = ["success", "fail"].includes(verifying[e.sha256Hash]) || 
+                                                 (idx === 0 && ["hashing", "comparing"].includes(verifying[e.sha256Hash])) ||
+                                                 (idx === 1 && ["comparing"].includes(verifying[e.sha256Hash]));
+                                  
+                                  return (
+                                    <div key={step} style={{ textAlign: "center", flex: 1, position: "relative" }}>
+                                      <div style={{ 
+                                        width: "10px", 
+                                        height: "10px", 
+                                        borderRadius: "50%", 
+                                        background: isDone ? "var(--accent-green)" : isCurrent ? "var(--accent-blue)" : "var(--border-subtle)",
+                                        margin: "0 auto 8px",
+                                        boxShadow: isCurrent ? "0 0 10px var(--accent-blue)" : "none",
+                                        transition: "all 0.3s ease"
+                                      }} />
+                                      <div style={{ 
+                                        fontSize: "0.65rem", 
+                                        color: isCurrent ? "var(--text-primary)" : "var(--text-muted)",
+                                        textTransform: "uppercase",
+                                        fontWeight: isCurrent ? 700 : 400
+                                      }}>
+                                        {step === "fetching" ? "Retrieve IPFS" : 
+                                         step === "hashing" ? "Compute SHA256" : 
+                                         step === "comparing" ? "Check Anchor" : "Final Audit"}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              {verifyResults[e.sha256Hash] && (
+                                <div style={{ 
+                                  padding: "10px", 
+                                  background: verifying[e.sha256Hash] === "success" ? "rgba(77,255,171,0.05)" : "rgba(255,77,109,0.05)",
+                                  borderRadius: "4px",
+                                  fontSize: "0.75rem",
+                                  fontFamily: "monospace",
+                                  color: verifying[e.sha256Hash] === "success" ? "var(--accent-green)" : "var(--accent-red)",
+                                  border: "1px solid rgba(255,255,255,0.05)"
+                                }}>
+                                  {verifyResults[e.sha256Hash]}
+                                </div>
+                              )}
                            </div>
                          )}
 
