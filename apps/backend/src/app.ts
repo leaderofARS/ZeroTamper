@@ -14,6 +14,9 @@ import healthRouter from "./routes/health";
 
 const app = express();
 
+// Required for Render / Load balancers
+app.set("trust proxy", 1);
+
 // ── Sanitize URLs (Fix double slashes) ──────────────────────────
 app.use((req, _res, next) => {
   req.url = req.url.replace(/\/+/g, "/");
