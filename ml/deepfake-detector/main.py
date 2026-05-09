@@ -184,7 +184,7 @@ async def analyze_media(req: AnalyzeRequest):
     if GEMINI_API_KEY:
         try:
             # Explicitly try 'gemini-1.5-flash-latest' which is often more stable
-            model = genai.GenerativeModel('gemini-1.5-flash-latest') 
+            model = genai.GenerativeModel('gemini-1.5-flash') 
             prompt = (
                 "Identify if this media is a deepfake or AI-generated. "
                 "Look for artifacts, anatomical errors, or unnatural textures. "
@@ -248,7 +248,7 @@ async def describe_media(req: DescribeRequest):
         media_bytes = response.content
         print(f"[ML-Describe] Media fetched successfully ({len(media_bytes)} bytes)")
         
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = (
             "You are an AI forensics assistant for WitnessChain. "
             "Describe exactly what is happening in this media in 2-3 concise sentences. "
