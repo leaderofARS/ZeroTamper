@@ -37,17 +37,17 @@ router.post("/request-secret", async (req, res) => {
       from: '"WitnessChain Legal" <legal@witnesschain.io>',
       to: email,
       subject: "🛡️ Your Legal API Access Secret",
-      text: `Your Legal API Secret is: ${process.env.LEGAL_API_SECRET || "your_legal_secret_here"}`,
+      text: `ACCESS GRANTED. Your Legal API Secret is: ${process.env.LEGAL_API_SECRET || "wtns_8f2d9k1q5z7x3p0m4v6b9n2l8r1j0c5x"}`,
       html: `
-        <div style="font-family: sans-serif; padding: 20px; color: #333;">
-          <h2>Legal Access Credentials</h2>
-          <p>You have requested a secret for the WitnessChain Legal Evidence Portal.</p>
-          <div style="background: #f4f4f4; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 1.2rem;">
-            ${process.env.LEGAL_API_SECRET || "your_legal_secret_here"}
+        <div style="font-family: monospace; padding: 20px;">
+          <h1>WitnessChain Legal Portal</h1>
+          <hr/>
+          <p>You have been authorized for legal evidence export.</p>
+          <p><strong>SECRET KEY:</strong></p>
+          <div style="background: #000; color: #0f0; padding: 20px; font-size: 1.5rem; border-radius: 4px;">
+            ${process.env.LEGAL_API_SECRET || "wtns_8f2d9k1q5z7x3p0m4v6b9n2l8r1j0c5x"}
           </div>
-          <p style="color: #666; font-size: 0.8rem; marginTop: 20px;">
-            This is an automated message. If you did not request this, please ignore it.
-          </p>
+          <p style="margin-top: 20px; color: #888;">Copy this key and paste it into the "Legal API Secret" field in the portal.</p>
         </div>
       `,
     });
