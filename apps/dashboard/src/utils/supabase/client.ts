@@ -5,9 +5,13 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 export const createClient = () => {
   if (!supabaseUrl || !supabaseKey) {
-    // During build time, these might be missing.
-    // Return a dummy object or handle it gracefully.
-    return {} as any;
+    return {
+      auth: {
+        getUser: async () => ({ data: { user: null }, error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        signOut: async () => {}
+      }
+    } as any;
   }
   return createBrowserClient(supabaseUrl, supabaseKey);
 };

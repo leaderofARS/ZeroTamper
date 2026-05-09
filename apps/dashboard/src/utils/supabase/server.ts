@@ -6,7 +6,13 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 export const createClient = (cookieStore: Awaited<ReturnType<typeof cookies>>) => {
   if (!supabaseUrl || !supabaseKey) {
-    return {} as any;
+    return {
+      auth: {
+        getUser: async () => ({ data: { user: null }, error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        signOut: async () => {}
+      }
+    } as any;
   }
   return createServerClient(
     supabaseUrl,
