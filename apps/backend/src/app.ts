@@ -41,6 +41,10 @@ const globalLimiter = rateLimit({
 app.use(globalLimiter);
 
 // ── Routes ─────────────────────────────────────────────────────────
+app.get("/", (_req, res) => {
+  res.json({ message: "WitnessChain API is running. Check /api/health for status." });
+});
+
 app.use("/api/health", healthRouter);
 app.use("/api/evidence", evidenceRouter);
 app.use("/api/incidents", incidentsRouter);
