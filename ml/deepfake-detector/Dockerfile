@@ -15,5 +15,5 @@ COPY . .
 
 EXPOSE 5001
 
-# Run with Gunicorn for production
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "main:app", "--timeout", "120"]
+# Run with Gunicorn + Uvicorn worker for production ASGI support
+CMD ["gunicorn", "--bind", "0.0.0.0:5001", "main:app", "-k", "uvicorn.workers.UvicornWorker", "--timeout", "120"]
