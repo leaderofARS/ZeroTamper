@@ -33,6 +33,23 @@ type Incident = {
   centroid_lon: number;
 };
 
+type EvidenceRecord = {
+  sha256_hash: string;
+  ipfs_cid: string;
+  solana_signature: string;
+  witness_wallet: string;
+  created_at: string;
+};
+
+type IncidentDetails = {
+  incidentId: string;
+  status: string;
+  witnessCount: number;
+  firstSeenAt: string;
+  location: { lat: number; lon: number };
+  evidenceRecords: EvidenceRecord[];
+};
+
 type Filters = {
   status: string;
   since: string;
@@ -134,21 +151,12 @@ export default function HeatmapSection() {
                     </tr>
                   ))
                 : incidents.slice(0, 10).map(inc => (
-                    <tr key={inc.id}>
-                      <td><span className="hash-chip">{inc.id.slice(0, 8)}…</span></td>
-                      <td>
-                        <span className={`badge badge-${inc.status.toLowerCase()}`}>
-                          {inc.status === "Confirmed" ? "✅" : inc.status === "Flagged" ? "🚩" : "⏳"} {inc.status}
-                        </span>
-                      </td>
-                      <td style={{ color: "var(--accent-cyan)", fontWeight: 600 }}>{inc.witness_count}</td>
-                      <td style={{ fontFamily: "monospace", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                        {inc.centroid_lat.toFixed(4)}, {inc.centroid_lon.toFixed(4)}
-                      </td>
-                      <td style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                        {new Date(inc.first_seen_at).toLocaleString()}
-                      </td>
-                    </tr>
+                    <IncidentRow 
+                      key={inc.id} 
+                      inc={inc} 
+                      isSelected={selected?.id === inc.id} 
+                      onSelect={() => setSelected(selected?.id === inc.id ? null : inc)} 
+                    />
                   ))
               }
             </tbody>
@@ -156,5 +164,115 @@ export default function HeatmapSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+function IncidentRow({ inc, isSelected, onSelect }: { inc: Incident, isSelected: boolean, onSelect: () => void }) {
+  return (
+    <>
+      <tr className={isSelected ? "selected" : ""} onClick={onSelect}>
+        <td><span className="hash-chip">{inc.id.slice(0, 8)}…</span></td>
+        <td>
+          <span className={`badge badge-${inc.status.toLowerCase()}`}>
+            {inc.status === "Confirmed" ? "✅" : inc.status === "Flagged" ? "🚩" : "⏳"} {inc.status}
+          </span>
+        </td>
+        <td style={{ color: "var(--accent-cyan)", fontWeight: 600 }}>{inc.witness_count}</td>
+        <td style={{ fontFamily: "monospace", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+          {inc.centroid_lat.toFixed(4)}, {inc.centroid_lon.toFixed(4)}
+        </td>
+        <td style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+          {new Date(inc.first_seen_at).toLocaleString()}
+        </td>
+      </tr>
+      {isSelected && (
+        <tr className="detail-row">
+          <td colSpan={5}>
+            <IncidentDetail id={inc.id} />
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+function IncidentDetail({ id }: { id: string }) {
+  const { data, error, isLoading } = useSWR<IncidentDetails>(
+    `${BACKEND}/api/incidents/${id}`,
+    fetcher
+  );
+
+  if (isLoading) return <div className="detail-content"><div className="skeleton" style={{ height: "100px", width: "100%" }} /></div>;
+  if (error || !data) return <div className="detail-content" style={{ color: "var(--accent-red)" }}>Error loading incident details.</div>;
+
+  return (
+    <div className="detail-content">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+        <div>
+          <h4 style={{ color: "var(--text-primary)", marginBottom: "12px", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Incident Overview
+          </h4>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "0.85rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--text-muted)" }}>Full ID:</span>
+              <span style={{ fontFamily: "monospace", color: "var(--accent-purple)" }}>{data.incidentId}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--text-muted)" }}>Coordinates:</span>
+              <span>{data.location.lat.toFixed(6)}, {data.location.lon.toFixed(6)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--text-muted)" }}>Witness Count:</span>
+              <span style={{ color: "var(--accent-cyan)", fontWeight: 600 }}>{data.witnessCount}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--text-muted)" }}>First Reported:</span>
+              <span>{new Date(data.firstSeenAt).toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style={{ color: "var(--text-primary)", marginBottom: "12px", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            On-Chain Evidence ({data.evidenceRecords.length})
+          </h4>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {data.evidenceRecords.map((rec, idx) => (
+              <div key={idx} style={{ 
+                background: "rgba(255,255,255,0.03)", 
+                padding: "12px", 
+                borderRadius: "8px",
+                border: "1px solid var(--border-subtle)",
+                fontSize: "0.8rem"
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                  <span style={{ color: "var(--accent-cyan)" }}>Witness Wallet</span>
+                  <span style={{ fontFamily: "monospace" }}>{rec.witness_wallet.slice(0, 6)}…{rec.witness_wallet.slice(-4)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                  <span style={{ color: "var(--text-muted)" }}>Media Hash</span>
+                  <span style={{ fontFamily: "monospace", fontSize: "0.75rem" }}>{rec.sha256_hash.slice(0, 16)}…</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                  <span style={{ color: "var(--text-muted)" }}>IPFS CID</span>
+                  <a href={`https://gateway.pinata.cloud/ipfs/${rec.ipfs_cid}`} target="_blank" rel="noreferrer" style={{ color: "var(--accent-purple)", textDecoration: "none" }}>
+                    {rec.ipfs_cid.slice(0, 8)}…{rec.ipfs_cid.slice(-4)} ↗
+                  </a>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "var(--text-muted)" }}>Solana TX</span>
+                  {(rec.solana_signature || (rec as any).solanaSignature) ? (
+                    <a href={`https://explorer.solana.com/tx/${rec.solana_signature || (rec as any).solanaSignature}?cluster=devnet`} target="_blank" rel="noreferrer" style={{ color: "var(--accent-cyan)", textDecoration: "none" }}>
+                      {(rec.solana_signature || (rec as any).solanaSignature).slice(0, 8)}… ↗
+                    </a>
+                  ) : (
+                    <span style={{ color: "var(--text-muted)" }}>Pending Anchor</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

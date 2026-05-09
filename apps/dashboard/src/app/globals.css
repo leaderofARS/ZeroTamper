@@ -438,7 +438,14 @@ body {
   vertical-align: middle;
 }
 .evidence-table tr:last-child td { border-bottom: none; }
-.evidence-table tr:hover td { background: var(--bg-glass); }
+.evidence-table tr:hover td { background: var(--bg-glass); cursor: pointer; }
+.evidence-table tr.selected td { background: rgba(153, 69, 255, 0.08); border-bottom: none; }
+.detail-row td { padding: 0 !important; background: rgba(153, 69, 255, 0.04) !important; border-bottom: 1px solid var(--border-subtle); }
+.detail-content { padding: 24px; animation: slideDown 0.3s ease-out; }
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .hash-chip {
   font-family: monospace;
   font-size: 0.8rem;

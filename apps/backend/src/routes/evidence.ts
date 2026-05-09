@@ -209,9 +209,9 @@ router.post("/submit", submitLimiter, walletAuth, async (req: Request, res: Resp
           .from("evidence_records")
           .update({ solana_signature: tx })
           .eq("sha256_hash", data.sha256Hash);
-        console.log(`[solana] Signature updated: ${tx}`);
+        console.log(`[solana] Signature updated in DB: ${tx}`);
       } else {
-        console.warn("[solana] Anchoring returned null (check service logs)");
+        console.warn(`[solana] Anchoring failed for ${data.sha256Hash.slice(0, 8)} (Check service wallet balance or PDA mismatch)`);
       }
     } catch (err: any) {
       console.error("[solana] Synchronous anchoring failed:", err.message);

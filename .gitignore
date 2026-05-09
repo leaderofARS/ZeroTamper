@@ -13,7 +13,6 @@ build/
 
 # Typescript
 dist/
-lib/
 *.tsbuildinfo
 
 # Rust / Anchor

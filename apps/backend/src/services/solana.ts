@@ -32,12 +32,12 @@ export async function anchorEvidenceOnChain(
 
     const witnessPubkey = new PublicKey(witnessWallet);
 
-    // PDA for the evidence
+    // PDA for the evidence - MUST match Anchor seeds: [b"evidence", witness.key().as_ref(), incident_id.as_bytes()]
     const [evidencePda] = PublicKey.findProgramAddressSync(
       [
         Buffer.from("evidence"),
         witnessPubkey.toBuffer(),
-        Buffer.from(incidentId.slice(0, 8)),
+        Buffer.from(incidentId),
       ],
       PROGRAM_ID
     );
