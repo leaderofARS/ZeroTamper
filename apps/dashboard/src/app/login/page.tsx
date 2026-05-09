@@ -114,22 +114,14 @@ export default function LoginPage() {
               <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }} />
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
               <button 
                 type="button" 
                 className="btn btn-secondary" 
                 style={{ justifyContent: "center" }}
                 onClick={() => handleOAuth('google')}
               >
-                Google
-              </button>
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                style={{ justifyContent: "center" }}
-                onClick={() => handleOAuth('github')}
-              >
-                GitHub
+                Continue with Google
               </button>
             </div>
           </form>
