@@ -14,6 +14,12 @@ import healthRouter from "./routes/health";
 
 const app = express();
 
+// ── Sanitize URLs (Fix double slashes) ──────────────────────────
+app.use((req, _res, next) => {
+  req.url = req.url.replace(/\/+/g, "/");
+  next();
+});
+
 // ── Security & middleware ──────────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
