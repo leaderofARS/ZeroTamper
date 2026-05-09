@@ -118,6 +118,37 @@ export default function LegalPortalClient() {
 
   return (
     <div>
+      {/* Access Secret Request */}
+      <div className="card" style={{ marginBottom: "20px", background: "linear-gradient(145deg, rgba(187,154,247,0.05), rgba(6,6,25,0))" }}>
+        <div className="card-body" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontWeight: 600, color: "var(--accent-purple)", marginBottom: "4px" }}>Law Enforcement Credentials</div>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", margin: 0 }}>
+              Need a secret for the Legal API? We'll send it to <strong>{user.email}</strong>
+            </p>
+          </div>
+          <button 
+            className="btn btn-secondary" 
+            style={{ fontSize: "0.85rem" }}
+            onClick={async () => {
+              try {
+                const res = await fetch(`${BACKEND}/api/export/request-secret`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email: user.email })
+                });
+                if (res.ok) alert("Legal API secret has been sent to your email!");
+                else alert("Failed to send secret. Please contact support.");
+              } catch (e) {
+                alert("Connection error.");
+              }
+            }}
+          >
+            ✉️ Email My Secret
+          </button>
+        </div>
+      </div>
+
       {/* Input form */}
       <div className="card" style={{ marginBottom: "32px" }}>
         <div className="card-header">

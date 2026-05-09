@@ -9,6 +9,23 @@ import { pinJSONToIPFS } from "../services/ipfs";
 const router = Router();
 
 /**
+ * POST /api/export/request-secret
+ * Sends the Legal API secret to the user's email.
+ * In a real app, this would use an email service.
+ */
+router.post("/request-secret", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required" });
+
+  console.log(`[legal] Requesting secret for ${email}`);
+  
+  // For the hackathon, we log it. In production, we'd use SendGrid/Postmark/Supabase Edge
+  console.log(`>>> EMAIL SENT TO ${email}: Your WitnessChain Legal API Secret is: ${process.env.LEGAL_API_SECRET}`);
+  
+  res.json({ message: "Secret sent to email" });
+});
+
+/**
  * GET /api/export/:incidentId
  * Authorized-only endpoint returning a tamper-proof evidence bundle.
  * Optionally returns a signed PDF if ?format=pdf is set.

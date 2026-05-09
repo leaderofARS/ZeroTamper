@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import Navbar from "@/components/Navbar";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -27,7 +27,7 @@ export default function LoginPage() {
     if (error) {
       setError(error.message);
     } else {
-      setMessage("Check your email for the magic link!");
+      setMessage("Your witness account is being prepared. Check your email to verify!");
     }
     setLoading(false);
   };
@@ -39,9 +39,9 @@ export default function LoginPage() {
         <div className="card" style={{ maxWidth: "400px", width: "100%", padding: "40px" }}>
           <div style={{ textAlign: "center", marginBottom: "32px" }}>
             <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🛡️</div>
-            <h1 style={{ fontSize: "1.8rem", marginBottom: "8px" }}>Welcome Back</h1>
+            <h1 style={{ fontSize: "1.8rem", marginBottom: "8px" }}>Join the Network</h1>
             <p style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>
-              Sign in to access the Legal Portal and manage your witness profile.
+              Become a verified witness and start securing tamper-proof evidence today.
             </p>
           </div>
 
@@ -52,7 +52,7 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 className="input-field"
-                placeholder="guardian@witnesschain.io"
+                placeholder="new.witness@witnesschain.io"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -95,12 +95,12 @@ export default function LoginPage() {
               style={{ width: "100%", padding: "12px" }}
               disabled={loading}
             >
-              {loading ? "Sending link..." : "Send Magic Link"}
+              {loading ? "Creating account..." : "Sign Up"}
             </button>
           </form>
 
           <div style={{ marginTop: "32px", textAlign: "center", fontSize: "0.85rem", color: "var(--text-muted)" }}>
-            No account yet? <a href="/signup" style={{ color: "var(--accent-purple)", fontWeight: 600 }}>Sign Up</a>
+            Already have an account? <a href="/login" style={{ color: "var(--accent-purple)", fontWeight: 600 }}>Log In</a>
           </div>
         </div>
       </div>

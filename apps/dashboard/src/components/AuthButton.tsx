@@ -50,7 +50,7 @@ export default function AuthButton() {
       <Link href="/login" className="btn btn-secondary" style={{ padding: "8px 16px" }}>
         Login
       </Link>
-      <Link href="/login" className="btn btn-primary" style={{ padding: "8px 16px" }}>
+      <Link href="/signup" className="btn btn-primary" style={{ padding: "8px 16px" }}>
         Sign Up
       </Link>
     </div>
