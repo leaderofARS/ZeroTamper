@@ -231,16 +231,22 @@ class DescribeRequest(BaseModel):
 
 @app.post("/describe")
 async def describe_media(req: DescribeRequest):
+    print(f"[ML-Describe] Processing request for: {req.mediaUrl}")
     if not GEMINI_API_KEY:
+        print("[ML-Describe] ERROR: Gemini API Key is missing!")
         raise HTTPException(status_code=500, detail="Gemini API Key not configured")
     
     try:
-        # Fetch media from URL (e.g. IPFS gateway)
+        # Fetch media from URL
         import requests
-        response = requests.get(req.mediaUrl, timeout=15)
+        print("[ML-Describe] Fetching media from gateway...")
+        response = requests.get(req.mediaUrl, timeout=20)
         if response.status_code != 200:
-            raise HTTPException(status_code=400, detail=f"Failed to fetch media from {req.mediaUrl}")
+            print(f"[ML-Describe] ERROR: Gateway returned {response.status_code}")
+            raise HTTPException(status_code=400, detail=f"Failed to fetch media from gateway")
+        
         media_bytes = response.content
+        print(f"[ML-Describe] Media fetched successfully ({len(media_bytes)} bytes)")
         
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
         prompt = (
@@ -251,9 +257,11 @@ async def describe_media(req: DescribeRequest):
         )
 
         is_image = req.mimeType.startswith("image/")
+        print(f"[ML-Describe] Analysis mode: {'Image' if is_image else 'Video/Audio'}")
         
         if is_image:
             img = Image.open(io.BytesIO(media_bytes)).convert("RGB")
+            print("[ML-Describe] Sending to Gemini (Image)...")
             response = model.generate_content([prompt, img])
         else:
             ext = ".mp4" if "video" in req.mimeType else ".mp3"
@@ -261,20 +269,26 @@ async def describe_media(req: DescribeRequest):
                 tmp.write(media_bytes)
                 tmp_path = tmp.name
             
+            print(f"[ML-Describe] Uploading {ext} to Gemini File API...")
             gemini_file = upload_to_gemini(tmp_path, req.mimeType)
+            
             import time
-            for _ in range(10):
+            for _ in range(15):
                 if gemini_file.state.name != 'PROCESSING': break
                 time.sleep(2)
                 gemini_file = genai.get_file(gemini_file.name)
             
+            print("[ML-Describe] Sending to Gemini (File API)...")
             response = model.generate_content([prompt, gemini_file])
             genai.delete_file(gemini_file.name)
             if os.path.exists(tmp_path): os.remove(tmp_path)
 
+        print("[ML-Describe] Analysis complete!")
         return {"description": response.text.strip()}
     except Exception as e:
-        print(f"Describe failed: {e}")
+        print(f"[ML-Describe] CRITICAL ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")

@@ -11,3 +11,4 @@ opencv-python-headless
 tf_keras
 gunicorn
 uvicorn
+requests
