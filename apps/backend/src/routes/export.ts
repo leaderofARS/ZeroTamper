@@ -6,23 +6,58 @@ import { legalAuth } from "../middleware/auth";
 import { exportLimiter } from "../middleware/rateLimiter";
 import { pinJSONToIPFS } from "../services/ipfs";
 
+import nodemailer from "nodemailer";
+
 const router = Router();
 
 /**
  * POST /api/export/request-secret
  * Sends the Legal API secret to the user's email.
- * In a real app, this would use an email service.
  */
 router.post("/request-secret", async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email is required" });
 
-  console.log(`[legal] Requesting secret for ${email}`);
-  
-  // For the hackathon, we log it. In production, we'd use SendGrid/Postmark/Supabase Edge
-  console.log(`>>> EMAIL SENT TO ${email}: Your WitnessChain Legal API Secret is: ${process.env.LEGAL_API_SECRET}`);
-  
-  res.json({ message: "Secret sent to email" });
+  try {
+    console.log(`[legal] Creating test email account for ${email}...`);
+    // Create a test account on Ethereal
+    const testAccount = await nodemailer.createTestAccount();
+    
+    const transporter = nodemailer.createTransport({
+      host: "smtp.ethereal.email",
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+
+    const info = await transporter.sendMail({
+      from: '"WitnessChain Legal" <legal@witnesschain.io>',
+      to: email,
+      subject: "🛡️ Your Legal API Access Secret",
+      text: `Your Legal API Secret is: ${process.env.LEGAL_API_SECRET || "your_legal_secret_here"}`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; color: #333;">
+          <h2>Legal Access Credentials</h2>
+          <p>You have requested a secret for the WitnessChain Legal Evidence Portal.</p>
+          <div style="background: #f4f4f4; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 1.2rem;">
+            ${process.env.LEGAL_API_SECRET || "your_legal_secret_here"}
+          </div>
+          <p style="color: #666; font-size: 0.8rem; marginTop: 20px;">
+            This is an automated message. If you did not request this, please ignore it.
+          </p>
+        </div>
+      `,
+    });
+
+    console.log(`[legal] Email sent! Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+    res.json({ message: "Secret sent to email (Mocked via Ethereal)", previewUrl: nodemailer.getTestMessageUrl(info) });
+  } catch (err: any) {
+    console.error("[legal] Failed to send email:", err.message);
+    res.status(500).json({ error: "Failed to send email" });
+  }
 });
 
 /**
