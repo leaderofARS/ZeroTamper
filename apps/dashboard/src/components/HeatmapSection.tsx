@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import useSWR from "swr";
 
@@ -58,6 +58,15 @@ type Filters = {
 export default function HeatmapSection() {
   const [filters, setFilters] = useState<Filters>({ status: "", since: "" });
   const [selected, setSelected] = useState<Incident | null>(null);
+
+  useEffect(() => {
+    if (selected) {
+      const element = document.getElementById(`incident-${selected.id}`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [selected]);
 
   const params = new URLSearchParams({
     ...(filters.status ? { status: filters.status } : {}),
@@ -170,7 +179,12 @@ export default function HeatmapSection() {
 function IncidentRow({ inc, isSelected, onSelect }: { inc: Incident, isSelected: boolean, onSelect: () => void }) {
   return (
     <>
-      <tr className={isSelected ? "selected" : ""} onClick={onSelect}>
+      <tr 
+        id={`incident-${inc.id}`}
+        className={isSelected ? "selected" : ""} 
+        onClick={onSelect}
+        style={{ cursor: "pointer" }}
+      >
         <td><span className="hash-chip">{inc.id.slice(0, 8)}…</span></td>
         <td>
           <span className={`badge badge-${inc.status.toLowerCase()}`}>
