@@ -10,18 +10,12 @@ services:
         value: production
       - key: PORT
         value: 10000
-      - fromContext: parameter
-        key: SUPABASE_URL
-      - fromContext: parameter
-        key: SUPABASE_SERVICE_KEY
-      - fromContext: parameter
-        key: SOLANA_RPC_URL
-      - fromContext: parameter
-        key: PROGRAM_ID
-      - fromContext: parameter
-        key: SOLANA_PRIVATE_KEY
-      - fromContext: parameter
-        key: PINATA_JWT
+      - key: SUPABASE_URL
+      - key: SUPABASE_SERVICE_KEY
+      - key: SOLANA_RPC_URL
+      - key: PROGRAM_ID
+      - key: SOLANA_PRIVATE_KEY
+      - key: PINATA_JWT
       - key: ML_SERVICE_URL
         sync: false # Set this to your ML service URL after deploying it
 
@@ -31,5 +25,4 @@ services:
     rootDir: ml/deepfake-detector
     plan: starter # ML models need more RAM
     envVars:
-      - fromContext: parameter
-        key: GEMINI_API_KEY
+      - key: GEMINI_API_KEY
