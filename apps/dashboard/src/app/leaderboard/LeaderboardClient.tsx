@@ -2,7 +2,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://witnesschain-backend.onrender.com";
 
 const BADGE_NAMES: Record<number, string> = {
   0: "🔍 First Witness",

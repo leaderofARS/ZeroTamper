@@ -5,7 +5,7 @@ import HeatmapSection from "@/components/HeatmapSection";
 import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://witnesschain-backend.onrender.com";
 
 export default function HomePage() {
   const { data: stats } = useSWR(`${BACKEND}/api/stats`, fetcher, {

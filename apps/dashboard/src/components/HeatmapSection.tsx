@@ -16,7 +16,7 @@ const MapComponent = dynamic(() => import("./MapComponent"), {
   )
 });
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://witnesschain-backend.onrender.com";
 
 async function fetcher(url: string) {
   const res = await fetch(url);
