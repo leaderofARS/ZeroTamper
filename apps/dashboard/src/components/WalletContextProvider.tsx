@@ -27,7 +27,7 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({ children })
                 addressSelector: createDefaultAddressSelector(),
                 appIdentity: {
                     name: "WitnessChain",
-                    uri: "https://witnesschain.vercel.app",
+                    uri: typeof window !== "undefined" ? window.location.origin : "https://witnesschain.vercel.app",
                     icon: "/favicon.ico",
                 },
                 authorizationResultCache: createDefaultAuthorizationResultCache(),
@@ -41,7 +41,7 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({ children })
 
     return (
         <ConnectionProvider endpoint={endpoint}>
-            <WalletProvider wallets={wallets} autoConnect>
+            <WalletProvider wallets={wallets}>
                 <WalletModalProvider>
                     {children}
                 </WalletModalProvider>
