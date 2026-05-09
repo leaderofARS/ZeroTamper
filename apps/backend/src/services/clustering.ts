@@ -32,7 +32,8 @@ function haversineMetres(
 export async function resolveIncidentCluster(
   latitude: number,
   longitude: number,
-  timestamp: number
+  timestamp: number,
+  witnessWallet: string
 ): Promise<string> {
   const windowStart = new Date((timestamp - CLUSTER_TIME_WINDOW_SECONDS) * 1000).toISOString();
   const windowEnd   = new Date((timestamp + CLUSTER_TIME_WINDOW_SECONDS) * 1000).toISOString();
@@ -47,7 +48,7 @@ export async function resolveIncidentCluster(
 
   if (error) {
     console.warn("[supabase] Falling back to in-memory incident clustering:", error.message);
-    return resolveMemoryIncident(latitude, longitude, timestamp);
+    return resolveMemoryIncident(latitude, longitude, timestamp, witnessWallet);
   }
 
   // Find the nearest cluster within the radius
@@ -71,9 +72,18 @@ export async function resolveIncidentCluster(
       .single();
 
     if (existing) {
-      const n = existing.witness_count + 1;
-      const newLat = (existing.centroid_lat * existing.witness_count + latitude) / n;
-      const newLon = (existing.centroid_lon * existing.witness_count + longitude) / n;
+      // Check if this wallet has already submitted evidence for this incident
+      const { count: existingSubmissionCount } = await supabase
+        .from("evidence_records")
+        .select("*", { count: "exact", head: true })
+        .eq("incident_id", bestId)
+        .eq("witness_wallet", witnessWallet);
+
+      const isNewWitness = (existingSubmissionCount ?? 0) === 0;
+      const n = isNewWitness ? existing.witness_count + 1 : existing.witness_count;
+      
+      const newLat = (existing.centroid_lat * existing.witness_count + latitude) / (existing.witness_count + 1);
+      const newLon = (existing.centroid_lon * existing.witness_count + longitude) / (existing.witness_count + 1);
 
       await supabase
         .from("incidents")
@@ -104,7 +114,7 @@ export async function resolveIncidentCluster(
 
   if (insertError) {
     console.warn("[supabase] Falling back to in-memory incident creation:", insertError.message);
-    return resolveMemoryIncident(latitude, longitude, timestamp);
+    return resolveMemoryIncident(latitude, longitude, timestamp, "ANON");
   }
   return newId;
 }

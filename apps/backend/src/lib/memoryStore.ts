@@ -53,7 +53,7 @@ function distanceMetres(lat1: number, lon1: number, lat2: number, lon2: number) 
   return earth * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export function resolveMemoryIncident(latitude: number, longitude: number, timestamp: number) {
+export function resolveMemoryIncident(latitude: number, longitude: number, timestamp: number, witnessWallet: string) {
   const submittedAt = new Date(timestamp * 1000).toISOString();
   let nearest: MemoryIncident | null = null;
   let nearestDistance = Infinity;
@@ -81,9 +81,11 @@ export function resolveMemoryIncident(latitude: number, longitude: number, times
     return id;
   }
 
-  const nextCount = nearest.witness_count + 1;
-  nearest.centroid_lat = (nearest.centroid_lat * nearest.witness_count + latitude) / nextCount;
-  nearest.centroid_lon = (nearest.centroid_lon * nearest.witness_count + longitude) / nextCount;
+  const isNewWitness = !nearest.evidence_records.some(e => e.witness_wallet === witnessWallet);
+  const nextCount = isNewWitness ? nearest.witness_count + 1 : nearest.witness_count;
+  
+  nearest.centroid_lat = (nearest.centroid_lat * nearest.witness_count + latitude) / (nearest.witness_count + 1);
+  nearest.centroid_lon = (nearest.centroid_lon * nearest.witness_count + longitude) / (nearest.witness_count + 1);
   nearest.witness_count = nextCount;
   nearest.status = nextCount >= 3 ? "Confirmed" : "Pending";
   return nearest.id;

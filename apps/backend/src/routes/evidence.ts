@@ -57,7 +57,7 @@ router.post("/submit", submitLimiter, walletAuth, async (req: Request, res: Resp
     }
 
     const timestamp = Math.floor(Date.now() / 1000);
-    const incidentId = await resolveIncidentCluster(data.latitude, data.longitude, timestamp);
+    const incidentId = await resolveIncidentCluster(data.latitude, data.longitude, timestamp, data.witnessWallet);
 
     // Check for exact duplicate hash
     const { data: existing } = await supabase
@@ -142,8 +142,11 @@ router.post("/submit", submitLimiter, walletAuth, async (req: Request, res: Resp
 
     if (insertErr) {
       if (insertErr.code === "23505") {
-        res.status(409).json({ error: "Wallet has already submitted evidence for this incident" });
-        return;
+        return res.status(200).json({ 
+          success: true,
+          incidentId, 
+          message: "Evidence already recorded for this wallet" 
+        });
       }
       console.warn("[supabase] Persisting evidence in memory:", insertErr.message);
       const stored = addMemoryEvidence({
@@ -164,8 +167,11 @@ router.post("/submit", submitLimiter, walletAuth, async (req: Request, res: Resp
         created_at: new Date().toISOString(),
       });
       if (!stored) {
-        res.status(409).json({ error: "Wallet has already submitted evidence for this incident" });
-        return;
+        return res.status(200).json({ 
+          success: true,
+          incidentId, 
+          message: "Evidence already recorded for this wallet" 
+        });
       }
     }
 

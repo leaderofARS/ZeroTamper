@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
+import { User } from "@supabase/supabase-js";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 
@@ -32,12 +34,46 @@ type Bundle = {
 };
 
 export default function LegalPortalClient() {
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const supabase = createClient();
+
   const [incidentId, setIncidentId] = useState("");
   const [apiSecret, setApiSecret]   = useState("");
   const [bundle, setBundle]         = useState<Bundle | null>(null);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState("");
   const [activeTab, setActiveTab]   = useState<"evidence" | "custody" | "verify">("evidence");
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setAuthLoading(false);
+    };
+    checkAuth();
+  }, [supabase.auth]);
+
+  if (authLoading) {
+    return (
+      <div className="card" style={{ padding: "40px", textAlign: "center" }}>
+        <div className="stat-value purple">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="card" style={{ padding: "40px", textAlign: "center" }}>
+        <div className="legal-icon" style={{ fontSize: "3rem", marginBottom: "16px" }}>🔒</div>
+        <h2 style={{ marginBottom: "12px" }}>Authentication Required</h2>
+        <p style={{ color: "var(--text-muted)", maxWidth: "400px", margin: "0 auto 24px" }}>
+          You must be logged in to access the Legal Evidence Portal. 
+          Please use the login button in the navigation bar to proceed.
+        </p>
+      </div>
+    );
+  }
 
   async function handleExport() {
     if (!incidentId.trim() || !apiSecret.trim()) {

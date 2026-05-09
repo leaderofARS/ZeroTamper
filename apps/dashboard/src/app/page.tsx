@@ -1,13 +1,25 @@
-import type { Metadata } from "next";
+"use client";
+
 import Navbar from "@/components/Navbar";
 import HeatmapSection from "@/components/HeatmapSection";
+import useSWR from "swr";
 
-export const metadata: Metadata = {
-  title: "Incident Heatmap — WitnessChain",
-  description: "Live map of anonymized incident clusters. Filter by status, time, and corroboration.",
-};
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 
 export default function HomePage() {
+  const { data: stats } = useSWR(`${BACKEND}/api/stats`, fetcher, {
+    refreshInterval: 10000, // Refresh every 10s
+  });
+
+  const statItems = [
+    { label: "Total Incidents",    value: stats?.totalIncidents ?? "—",    cls: "purple" },
+    { label: "Confirmed Evidence", value: stats?.confirmedEvidence ?? "—", cls: "cyan"   },
+    { label: "Active Witnesses",   value: stats?.activeWitnesses ?? "—",   cls: "purple" },
+    { label: "On-chain Anchors",   value: stats?.onChainAnchors ?? "—",    cls: "cyan"   },
+    { label: "Legal Exports",      value: stats?.legalExports ?? "—",      cls: "amber"  },
+  ];
+
   return (
     <>
       <Navbar />
@@ -37,13 +49,7 @@ export default function HomePage() {
 
       {/* Stats bar */}
       <div className="stats-bar">
-        {[
-          { label: "Total Incidents",    value: "—",    cls: "purple" },
-          { label: "Confirmed Evidence", value: "—",    cls: "cyan"   },
-          { label: "Active Witnesses",   value: "—",    cls: "purple" },
-          { label: "On-chain Anchors",   value: "—",    cls: "cyan"   },
-          { label: "Legal Exports",      value: "—",    cls: "amber"  },
-        ].map(s => (
+        {statItems.map(s => (
           <div key={s.label} className="stat-item">
             <div className={`stat-value ${s.cls}`}>{s.value}</div>
             <div className="stat-label">{s.label}</div>

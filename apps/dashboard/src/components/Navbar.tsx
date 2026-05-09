@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
+import AuthButton from "./AuthButton";
 
 const WalletMultiButton = dynamic(
   async () => (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
@@ -38,6 +39,7 @@ export default function Navbar() {
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <span className="navbar-badge" style={{ margin: 0 }}>Devnet</span>
+          <AuthButton />
           <div className="wallet-btn-wrapper">
              <WalletMultiButton />
           </div>
