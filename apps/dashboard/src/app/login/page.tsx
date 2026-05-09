@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const supabase = createClient();
 
-  const handleAuth = async (e: React.FormEvent) => {
+    const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
@@ -30,6 +30,16 @@ export default function LoginPage() {
       setMessage("Check your email for the magic link!");
     }
     setLoading(false);
+  };
+
+  const handleOAuth = async (provider: 'google' | 'github') => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: "https://zero-tamper-dashboard.vercel.app",
+      },
+    });
+    if (error) setError(error.message);
   };
 
   return (
@@ -97,6 +107,31 @@ export default function LoginPage() {
             >
               {loading ? "Sending link..." : "Send Magic Link"}
             </button>
+
+            <div style={{ display: "flex", alignItems: "center", margin: "24px 0", gap: "12px" }}>
+              <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }} />
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Or continue with</span>
+              <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }} />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                style={{ justifyContent: "center" }}
+                onClick={() => handleOAuth('google')}
+              >
+                Google
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                style={{ justifyContent: "center" }}
+                onClick={() => handleOAuth('github')}
+              >
+                GitHub
+              </button>
+            </div>
           </form>
 
           <div style={{ marginTop: "32px", textAlign: "center", fontSize: "0.85rem", color: "var(--text-muted)" }}>
