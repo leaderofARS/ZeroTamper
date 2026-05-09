@@ -225,6 +225,58 @@ async def analyze_media(req: AnalyzeRequest):
 
     return AnalyzeResponse(isDeepfake=is_deepfake, confidence=confidence, pHash=p_hash, modelMode=mode)
 
+class DescribeRequest(BaseModel):
+    mediaUrl: str
+    mimeType: str = "image/jpeg"
+
+@app.post("/describe")
+async def describe_media(req: DescribeRequest):
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Gemini API Key not configured")
+    
+    try:
+        # Fetch media from URL (e.g. IPFS gateway)
+        import requests
+        response = requests.get(req.mediaUrl, timeout=15)
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail=f"Failed to fetch media from {req.mediaUrl}")
+        media_bytes = response.content
+        
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        prompt = (
+            "You are an AI forensics assistant for WitnessChain. "
+            "Describe exactly what is happening in this media in 2-3 concise sentences. "
+            "Focus on identifying the event (e.g., accident, crime, protest) and key details. "
+            "Be objective and professional."
+        )
+
+        is_image = req.mimeType.startswith("image/")
+        
+        if is_image:
+            img = Image.open(io.BytesIO(media_bytes)).convert("RGB")
+            response = model.generate_content([prompt, img])
+        else:
+            ext = ".mp4" if "video" in req.mimeType else ".mp3"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                tmp.write(media_bytes)
+                tmp_path = tmp.name
+            
+            gemini_file = upload_to_gemini(tmp_path, req.mimeType)
+            import time
+            for _ in range(10):
+                if gemini_file.state.name != 'PROCESSING': break
+                time.sleep(2)
+                gemini_file = genai.get_file(gemini_file.name)
+            
+            response = model.generate_content([prompt, gemini_file])
+            genai.delete_file(gemini_file.name)
+            if os.path.exists(tmp_path): os.remove(tmp_path)
+
+        return {"description": response.text.strip()}
+    except Exception as e:
+        print(f"Describe failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/health")
 def health():
     return {

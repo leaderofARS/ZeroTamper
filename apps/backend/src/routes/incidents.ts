@@ -67,4 +67,42 @@ router.get("/", async (req: Request, res: Response) => {
   res.json({ total: count, incidents: data });
 });
 
+/**
+ * POST /api/incidents/:incidentId/ai-summary
+ * Triggers Gemini AI analysis of the incident media.
+ */
+router.post("/:incidentId/ai-summary", async (req: Request, res: Response) => {
+  const { incidentId } = req.params;
+  const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:5001";
+
+  try {
+    // 1. Get incident and its evidence
+    const { data: evidence, error } = await supabase
+      .from("evidence")
+      .select("media_url, mime_type")
+      .eq("incident_id", incidentId)
+      .limit(1)
+      .single();
+
+    if (error || !evidence) {
+      return res.status(404).json({ error: "No evidence found for this incident" });
+    }
+
+    // 2. Call ML Service
+    const axios = require("axios");
+    const mlResponse = await axios.post(`${ML_URL}/describe`, {
+      mediaUrl: evidence.media_url,
+      mimeType: evidence.mime_type
+    });
+
+    res.json({ 
+      summary: mlResponse.data.description,
+      source: evidence.media_url
+    });
+  } catch (err: any) {
+    console.error("[AI Summary Error]:", err.message);
+    res.status(500).json({ error: "Failed to generate AI summary" });
+  }
+});
+
 export default router;
