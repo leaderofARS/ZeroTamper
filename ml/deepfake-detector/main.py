@@ -26,6 +26,10 @@ load_dotenv()
 
 app = FastAPI(title="WitnessChain ML Service - Multimodal Edition")
 
+@app.get("/")
+def root():
+    return {"message": "WitnessChain ML Service is running. Check /health for status."}
+
 # --- Gemini Configuration ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_API_KEY:
