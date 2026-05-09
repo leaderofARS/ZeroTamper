@@ -11,17 +11,17 @@ services:
       - key: PORT
         value: 10000
       - key: SUPABASE_URL
-        fromParam: SUPABASE_URL
+        sync: false
       - key: SUPABASE_SERVICE_KEY
-        fromParam: SUPABASE_SERVICE_KEY
+        sync: false
       - key: SOLANA_RPC_URL
-        fromParam: SOLANA_RPC_URL
+        sync: false
       - key: PROGRAM_ID
-        fromParam: PROGRAM_ID
+        sync: false
       - key: SOLANA_PRIVATE_KEY
-        fromParam: SOLANA_PRIVATE_KEY
+        sync: false
       - key: PINATA_JWT
-        fromParam: PINATA_JWT
+        sync: false
 
   - type: web
     name: witnesschain-ml
@@ -29,13 +29,4 @@ services:
     rootDir: ml/deepfake-detector
     envVars:
       - key: GEMINI_API_KEY
-        fromParam: GEMINI_API_KEY
-
-parameters:
-  - key: SUPABASE_URL
-  - key: SUPABASE_SERVICE_KEY
-  - key: SOLANA_RPC_URL
-  - key: PROGRAM_ID
-  - key: SOLANA_PRIVATE_KEY
-  - key: PINATA_JWT
-  - key: GEMINI_API_KEY
+        sync: false
