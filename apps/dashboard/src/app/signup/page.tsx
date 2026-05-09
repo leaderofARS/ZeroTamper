@@ -20,7 +20,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: "https://zero-tamper-dashboard.vercel.app",
       },
     });
 

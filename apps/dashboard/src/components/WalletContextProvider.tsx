@@ -27,7 +27,7 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({ children })
                 addressSelector: createDefaultAddressSelector(),
                 appIdentity: {
                     name: "WitnessChain",
-                    uri: typeof window !== "undefined" ? window.location.origin : "https://witnesschain.vercel.app",
+                    uri: "https://zero-tamper-dashboard.vercel.app",
                     icon: "/favicon.ico",
                 },
                 authorizationResultCache: createDefaultAuthorizationResultCache(),
