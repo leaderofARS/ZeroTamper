@@ -9,7 +9,10 @@ export const createClient = () => {
       auth: {
         getUser: async () => ({ data: { user: null }, error: null }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-        signOut: async () => {}
+        signOut: async () => {},
+        signInWithOtp: async () => ({ data: { user: null, session: null }, error: new Error("Supabase environment variables are missing in Vercel settings.") }),
+        signInWithPassword: async () => ({ data: { user: null, session: null }, error: new Error("Supabase environment variables are missing.") }),
+        signUp: async () => ({ data: { user: null, session: null }, error: new Error("Supabase environment variables are missing.") }),
       }
     } as any;
   }

@@ -10,7 +10,10 @@ export const createClient = (cookieStore: Awaited<ReturnType<typeof cookies>>) =
       auth: {
         getUser: async () => ({ data: { user: null }, error: null }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-        signOut: async () => {}
+        signOut: async () => {},
+        signInWithOtp: async () => ({ data: null, error: new Error("Supabase environment variables are missing.") }),
+        signInWithPassword: async () => ({ data: null, error: new Error("Supabase environment variables are missing.") }),
+        signUp: async () => ({ data: null, error: new Error("Supabase environment variables are missing.") }),
       }
     } as any;
   }
