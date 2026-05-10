@@ -211,34 +211,12 @@ function IncidentRow({ inc, isSelected, onSelect }: { inc: Incident, isSelected:
 }
 
 function IncidentDetail({ id }: { id: string }) {
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
 
   const { data, error, isLoading } = useSWR<IncidentDetails>(
     `${BACKEND}/api/incidents/${id}`,
     fetcher
   );
 
-  const generateSummary = async () => {
-    setIsGenerating(true);
-    setAiSummary(null); // Clear previous
-    try {
-      const res = await fetch(`${BACKEND}/api/incidents/${id}/ai-summary`, {
-        method: "POST"
-      });
-      const json = await res.json();
-      if (json.summary) {
-        setAiSummary(json.summary);
-      } else if (json.error) {
-        setAiSummary(`⚠️ ${json.error}`);
-      }
-    } catch (err) {
-      console.error(err);
-      setAiSummary("⚠️ Connection to analysis engine failed.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   if (isLoading) return <div className="detail-content"><div className="skeleton" style={{ height: "100px", width: "100%" }} /></div>;
   if (error || !data) return <div className="detail-content" style={{ color: "var(--accent-red)" }}>Error loading incident details.</div>;
@@ -312,53 +290,6 @@ function IncidentDetail({ id }: { id: string }) {
         </div>
       </div>
       
-      {/* AI Analysis Section */}
-      <div style={{ 
-        marginTop: "24px", 
-        padding: "20px", 
-        background: "linear-gradient(135deg, rgba(153,69,255,0.08) 0%, rgba(20,241,149,0.05) 100%)",
-        borderRadius: "12px",
-        border: "1px solid rgba(153,69,255,0.2)"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-          <h4 style={{ color: "var(--text-primary)", margin: 0, fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "1.2rem" }}>✨</span> AI Forensic Analysis
-          </h4>
-          {!aiSummary && !isGenerating && (
-            <button 
-              className="btn btn-primary" 
-              style={{ padding: "6px 12px", fontSize: "0.75rem" }}
-              onClick={generateSummary}
-            >
-              Generate AI Report
-            </button>
-          )}
-        </div>
-
-        {isGenerating ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-            <div className="skeleton" style={{ height: "40px", flex: 1 }} />
-            <span>Gemini is analyzing evidence...</span>
-          </div>
-        ) : aiSummary ? (
-          <p style={{ 
-            fontSize: "0.9rem", 
-            lineHeight: "1.6", 
-            color: "var(--text-secondary)", 
-            fontStyle: "italic",
-            margin: 0,
-            background: "rgba(0,0,0,0.2)",
-            padding: "12px",
-            borderRadius: "8px"
-          }}>
-            "{aiSummary}"
-          </p>
-        ) : (
-          <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", margin: 0 }}>
-            Click the button to generate an objective AI summary of this incident using Gemini 1.5 Flash.
-          </p>
-        )}
-      </div>
     </div>
   );
 }
